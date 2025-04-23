@@ -3,8 +3,11 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/jc-design/rp_mgmt/internal/rules"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -98,4 +101,21 @@ func (e *Element) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func LoadElements(f rules.Folderstructure) ([]Element, error) {
+
+	e := make([]Element, 0, 20)
+
+	data, err := os.ReadFile(filepath.Join(f.Data, "characterproperties.json"))
+	if err != nil {
+		return e, err
+	}
+
+	err = json.Unmarshal(data, &e)
+	if err != nil {
+		return e, err
+	}
+
+	return e, nil
 }
