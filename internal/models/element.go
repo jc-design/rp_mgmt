@@ -9,10 +9,10 @@ import (
 )
 
 type Element struct {
-	Type          FieldType     `json:"type"`
-	ReferenceType FieldType     `json:"referencetype"`
-	Value         ElementValuer `json:"value"`
-	Visibility    Visibility    `json:"visibility"`
+	Type          FieldType      `json:"type"`
+	ReferenceType FieldType      `json:"referencetype"`
+	Value         ValueElementer `json:"value"`
+	Visibility    Visibility     `json:"visibility"`
 	isValidated   bool
 	isDirty       bool
 	errorMsg      string

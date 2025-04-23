@@ -20,21 +20,24 @@ func (e *FieldType) Identify() string {
 	return fmt.Sprintf("%s|%s", e.Type, e.Id)
 }
 
-func (i *FieldType) SetValue(input any) {
-	assert, ok := input.(FieldType)
-	if ok {
-		i.Type = assert.Type
-		i.Id = assert.Id
-		i.Label = assert.Label
-		i.Description = assert.Description
+func (i *FieldType) SetValue(input ...any) {
+	if len(input) > 0 {
+		first_input := input[0]
+		assert, ok := first_input.(FieldType)
+		if ok {
+			i.Type = assert.Type
+			i.Id = assert.Id
+			i.Label = assert.Label
+			i.Description = assert.Description
+		}
 	}
 }
 
-func (i *FieldType) ValueAsString() string {
+func (i *FieldType) String() string {
 	return i.Label
 }
 
-func (i *FieldType) AdditionalValueAsString() string {
+func (i *FieldType) InfosAsString() string {
 	return i.Description
 }
 

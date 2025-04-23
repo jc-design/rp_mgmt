@@ -96,5 +96,5 @@ func TestElementExecuteDiceFunction(t *testing.T) {
 	assert.NoError(t, err)
 
 	e.Value.Execute()
-	assert.NotEqual(t, "0", e.Value.ValueAsString())
+	assert.NotEqual(t, "0", e.Value.String())
 }

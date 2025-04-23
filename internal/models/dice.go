@@ -15,23 +15,26 @@ type Dice struct {
 	Abr        string `json:"abr"`
 }
 
-func (i *Dice) SetValue(input any) {
-	switch input.(type) {
-	case int:
-		i.Value = input.(int)
-	case string:
-		parsed, err := strconv.ParseInt(input.(string), 10, 64)
-		if err == nil {
-			i.Value = int(parsed)
+func (i *Dice) SetValue(input ...any) {
+	if len(input) > 0 {
+		first_input := input[0]
+		switch input := first_input.(type) {
+		case int:
+			i.Value = input
+		case string:
+			parsed, err := strconv.ParseInt(input, 10, 64)
+			if err == nil {
+				i.Value = int(parsed)
+			}
 		}
 	}
 }
 
-func (i *Dice) ValueAsString() string {
+func (i *Dice) String() string {
 	return fmt.Sprintf("%d", i.Value)
 }
 
-func (i *Dice) AdditionalValueAsString() string {
+func (i *Dice) InfosAsString() string {
 	switch {
 	case i.DiceMarkup == 0:
 		return fmt.Sprintf("%d%s%d", i.DiceCount, i.Abr, i.DiceValue)
