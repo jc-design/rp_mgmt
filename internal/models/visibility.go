@@ -20,13 +20,13 @@ func (vis *Visibility) ToString() string {
 	*vis = *vis & (15)
 	for i := 0; i < 4; i++ {
 		if *vis&(1<<i) == 1 {
-			v = append(v, "Creation")
+			v = append(v, "creation")
 		} else if *vis&(1<<i) == 2 {
-			v = append(v, "Levelup")
+			v = append(v, "levelup")
 		} else if *vis&(1<<i) == 4 {
-			v = append(v, "Extended")
+			v = append(v, "extended")
 		} else if *vis&(1<<i) == 8 {
-			v = append(v, "Other")
+			v = append(v, "other")
 		}
 	}
 	if len(v) == 0 {
@@ -39,13 +39,13 @@ func (vis *Visibility) FromString(value string) {
 	*vis = Visibility(1)
 	v := strings.Split(value, "|")
 	for _, s := range v {
-		if s == "Creation" && *vis > 0 {
+		if strings.ToLower(s) == "creation" && *vis > 0 {
 			*vis = *vis | (1 << 0)
-		} else if s == "Levelup" && *vis > 0 {
+		} else if strings.ToLower(s) == "levelup" && *vis > 0 {
 			*vis = *vis | (1 << 1)
-		} else if s == "Extended" && *vis > 0 {
+		} else if strings.ToLower(s) == "extended" && *vis > 0 {
 			*vis = *vis | (1 << 2)
-		} else if s == "Other" && *vis > 0 {
+		} else if strings.ToLower(s) == "other" && *vis > 0 {
 			*vis = *vis | (1 << 3)
 		} else {
 			*vis = 0

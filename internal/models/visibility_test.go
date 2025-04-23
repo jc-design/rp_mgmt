@@ -10,7 +10,7 @@ import (
 )
 
 func TestVisbilityJsonUnMarshal(t *testing.T) {
-	jsonStr := `{"Visibility":"Creation|Levelup"}`
+	jsonStr := `{"Visibility":"creation|levelup"}`
 
 	e := struct {
 		Visibility models.Visibility
@@ -24,7 +24,7 @@ func TestVisbilityJsonUnMarshal(t *testing.T) {
 }
 
 func TestVisbilityJsonMarshal(t *testing.T) {
-	jsonStr := `{"Visibility":"Creation|Levelup"}`
+	jsonStr := `{"Visibility":"creation|levelup"}`
 
 	e := struct {
 		Visibility models.Visibility

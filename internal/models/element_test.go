@@ -10,25 +10,25 @@ import (
 
 func TestElementJsonUnMarshal(t *testing.T) {
 	jsonStr := `{
-    "Type": {
-      "Type": "baseproperty",
-      "Id": "race",
-      "Label": "Rasse",
-      "Description": "Rasse"
+    "type": {
+      "type": "baseproperty",
+      "id": "race",
+      "label": "Rasse",
+      "description": "Rasse"
     },
-    "ReferenceType": {
-      "Type": "",
-      "Id": "",
-      "Label": "",
-      "Description": ""
+    "referencetype": {
+      "type": "",
+      "id": "",
+      "label": "",
+      "description": ""
     },
-    "Value": {
-      "Type": "race",
-      "Id": "hu",
-      "Label": "Mensch",
-      "Description": "Mensch"
+    "value": {
+      "type": "race",
+      "id": "hu",
+      "label": "Mensch",
+      "description": "Mensch"
     },
-    "Visibility": "Creation|Levelup"
+    "visibility": "creation|levelup"
   }`
 
 	e := models.Element{}
@@ -51,7 +51,7 @@ func TestElementJsonMarshal(t *testing.T) {
 			Label:       "Test",
 			Description: "Test",
 		},
-		Value:      "Test",
+		Value:      &models.StringValue{StringValue: "Test"},
 		Visibility: 5,
 	}
 	j, err := json.Marshal(&e)
@@ -65,4 +65,36 @@ func TestElementJsonMarshal(t *testing.T) {
 		assert.Fail(t, "failing unmarshaling Element")
 	}
 	assert.Equal(t, e, compare_e)
+}
+
+func TestElementExecuteDiceFunction(t *testing.T) {
+	jsonStr := `{
+    "type": {
+      "type": "baseproperty",
+      "id": "race",
+      "label": "Rasse",
+      "description": "Rasse"
+    },
+    "referencetype": {
+      "type": "",
+      "id": "",
+      "label": "",
+      "description": ""
+    },
+    "value": {
+      "dicevalue": 100,
+      "dicecount": 1,
+      "dicemarkup": 0,
+      "value": 0,
+	  "abr": "W"
+    },
+    "visibility": "creation|levelup"
+  }`
+
+	e := models.Element{}
+	err := json.Unmarshal([]byte(jsonStr), &e)
+	assert.NoError(t, err)
+
+	e.Value.Execute()
+	assert.NotEqual(t, "0", e.Value.ValueAsString())
 }

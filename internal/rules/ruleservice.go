@@ -9,12 +9,19 @@ import (
 
 var knowledgeLibrary = *ast.NewKnowledgeLibrary()
 
+// RuleServiceClient needs this interface
+type RulesApplier interface {
+	ApplyRules(c RuleFact) error
+}
+
 // Rule fact object
+// The elment to check and modify needs this interface
 type RuleFact interface {
 	FactKey() string
 }
 
 // Configs associated with each rule
+// RuleContext needs this interface
 type RuleConfig interface {
 	RuleFacts() []RuleFact
 }
@@ -71,5 +78,47 @@ func (svc *RuleEngineService) Execute(ruleConf RuleConfig) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+type InputOnlyRuleContext struct {
+	RuleInputFact RuleFact
+}
+
+type InputOnlyRuleServiceClient struct {
+	ruleEngineSvc *RuleEngineService
+}
+
+func (context *InputOnlyRuleContext) RuleFacts() []RuleFact {
+	var f = make([]RuleFact, 0)
+	f = append(f, context.RuleInputFact)
+	return f
+}
+
+func NewInputOnlyRuleService(rulesAsBytes []byte, name string, version string) (RulesApplier, error) {
+	ruleEngineSvc, err := NewRuleEngineSvc(rulesAsBytes, name, version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &InputOnlyRuleServiceClient{
+		ruleEngineSvc: ruleEngineSvc,
+	}, nil
+}
+
+func newInputOnlyContext(r RuleFact) *InputOnlyRuleContext {
+	return &InputOnlyRuleContext{
+		RuleInputFact: r,
+	}
+}
+
+func (svc *InputOnlyRuleServiceClient) ApplyRules(r RuleFact) error {
+	context := newInputOnlyContext(r)
+
+	err := svc.ruleEngineSvc.Execute(context)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

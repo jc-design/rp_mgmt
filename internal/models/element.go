@@ -3,15 +3,16 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 )
 
 type Element struct {
-	Type          FieldType
-	ReferenceType FieldType
-	Value         any
-	Visibility    Visibility
+	Type          FieldType     `json:"type"`
+	ReferenceType FieldType     `json:"referencetype"`
+	Value         ElementValuer `json:"value"`
+	Visibility    Visibility    `json:"visibility"`
 	isValidated   bool
 	isDirty       bool
 	errorMsg      string
@@ -19,6 +20,18 @@ type Element struct {
 
 func (e *Element) Identify() string {
 	return e.Type.Identify()
+}
+
+func (e *Element) RulesReset() {
+	e.isDirty = true
+	e.isValidated = false
+	e.errorMsg = ""
+}
+
+func (e *Element) RulesApplied(validation bool, err string) {
+	e.isDirty = false
+	e.isValidated = validation
+	e.errorMsg = err
 }
 
 func (e *Element) UnmarshalJSON(data []byte) error {
@@ -31,66 +44,55 @@ func (e *Element) UnmarshalJSON(data []byte) error {
 	}
 
 	var t FieldType
-	err = mapstructure.Decode(jsonData["Type"], &t)
+	err = mapstructure.Decode(jsonData["type"], &t)
 	if err == nil && t.Type != "" {
 		e.Type = t
+	} else if err == nil && len(strings.TrimSpace(t.Type)) == 0 {
+		return errors.New("field [type] missing")
 	} else {
-		return errors.New("failed to create field named [Type]")
+		return errors.New("failed to create field named [type]")
 	}
 
 	var rt FieldType
-	err = mapstructure.Decode(jsonData["ReferenceType"], &rt)
+	err = mapstructure.Decode(jsonData["referencetype"], &rt)
 	if err == nil {
 		e.ReferenceType = rt
 	}
 
-	switch jsonData["Value"].(type) {
-	case int:
-		e.Value = jsonData["Value"].(int)
-	case int8:
-		e.Value = int(jsonData["Value"].(int8))
-	case int16:
-		e.Value = int(jsonData["Value"].(int16))
-	case int32:
-		e.Value = int(jsonData["Value"].(int32))
-	case int64:
-		e.Value = int(jsonData["Value"].(int64))
-	case uint:
-		e.Value = jsonData["Value"].(uint)
-	case uint8:
-		e.Value = int(jsonData["Value"].(uint8))
-	case uint16:
-		e.Value = int(jsonData["Value"].(uint16))
-	case uint32:
-		e.Value = int(jsonData["Value"].(uint32))
-	case uint64:
-		e.Value = int(jsonData["Value"].(uint64))
-	case float32:
-		e.Value = int(jsonData["Value"].(float32))
-	case float64:
-		e.Value = int(jsonData["Value"].(float64))
-	case string:
-		e.Value = jsonData["Value"].(string)
-	case map[string]interface{}:
-		var d Dice
-		err := mapstructure.Decode(jsonData["Value"], &d)
-		if err == nil {
-			e.Value = d
-			return nil
-		}
-		var f FieldType
-		err = mapstructure.Decode(jsonData["Value"], &f)
-		if err == nil {
-			e.Value = f
-			return nil
-		}
-		e.Value = nil
-		return nil
-	default:
-		e.Value = nil
+	val, ok := jsonData["value"].(map[string]interface{})
+	if !ok {
+		return errors.New("field [value] missing")
 	}
 
-	vis, ok := jsonData["Visibility"].(string)
+	if val["intvalue"] != nil {
+		var i IntValue
+		err := mapstructure.Decode(val, &i)
+		if err == nil {
+			e.Value = &i
+		}
+	} else if val["stringvalue"] != nil {
+		var i StringValue
+		err := mapstructure.Decode(val, &i)
+		if err == nil {
+			e.Value = &i
+		}
+	} else if val["dicevalue"] != nil {
+		var i Dice
+		err := mapstructure.Decode(val, &i)
+		if err == nil {
+			e.Value = &i
+		}
+	} else if val["type"] != nil {
+		var i FieldType
+		err := mapstructure.Decode(val, &i)
+		if err == nil {
+			e.Value = &i
+		}
+	} else {
+		return errors.New("field [value] missing")
+	}
+
+	vis, ok := jsonData["visibility"].(string)
 	if ok {
 		e.Visibility.FromString(vis)
 	}

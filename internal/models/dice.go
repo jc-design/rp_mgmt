@@ -2,58 +2,69 @@ package models
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 )
 
 type Dice struct {
-	DiceValue  int
-	DiceCount  int
-	DiceMarkup int
-	Value      int
-	Abr        string
+	DiceValue  int    `json:"dicevalue"`
+	DiceCount  int    `json:"dicecount"`
+	DiceMarkup int    `json:"dicemarkup"`
+	Value      int    `json:"value"`
+	Abr        string `json:"abr"`
 }
 
-func (e *Dice) String() string {
+func (i *Dice) SetValue(input any) {
+	switch input.(type) {
+	case int:
+		i.Value = input.(int)
+	case string:
+		parsed, err := strconv.ParseInt(input.(string), 10, 64)
+		if err == nil {
+			i.Value = int(parsed)
+		}
+	}
+}
+
+func (i *Dice) ValueAsString() string {
+	return fmt.Sprintf("%d", i.Value)
+}
+
+func (i *Dice) AdditionalValueAsString() string {
 	switch {
-	case e.DiceMarkup == 0:
-		return fmt.Sprintf("%d%s%d", e.DiceCount, e.Abr, e.DiceValue)
-	case e.DiceMarkup < 0:
-		return fmt.Sprintf("%d%s%d %d", e.DiceCount, e.Abr, e.DiceValue, e.DiceMarkup)
-	case e.DiceMarkup > 0:
-		return fmt.Sprintf("%d%s%d +%d", e.DiceCount, e.Abr, e.DiceValue, e.DiceMarkup)
+	case i.DiceMarkup == 0:
+		return fmt.Sprintf("%d%s%d", i.DiceCount, i.Abr, i.DiceValue)
+	case i.DiceMarkup < 0:
+		return fmt.Sprintf("%d%s%d %d", i.DiceCount, i.Abr, i.DiceValue, i.DiceMarkup)
+	case i.DiceMarkup > 0:
+		return fmt.Sprintf("%d%s%d +%d", i.DiceCount, i.Abr, i.DiceValue, i.DiceMarkup)
 	default:
 		return ""
 	}
 }
 
-func RollDice(d *Dice) (int, error) {
-
-	if !(d.DiceValue > 0 && d.DiceValue <= 100) {
-		return 0, errors.New("DiceCount must be between than 1 and 100")
+func (i *Dice) Execute() {
+	if !(i.DiceValue > 0 && i.DiceValue <= 100) {
+		return
 	}
-	if !(d.DiceCount > 0 && d.DiceCount <= 20) {
-		return 0, errors.New("DiceCount must be between than 1 and 20")
-	}
-	if !(d.DiceMarkup >= -100 && d.DiceCount <= 100) {
-		return 0, errors.New("DiceMArkup must be between than -100 and 100")
+	if !(i.DiceMarkup >= -100 && i.DiceCount <= 100) {
+		return
 	}
 
 	//get random number as many times as DiceCount
 	n := 0
-	for range d.DiceCount {
-		if r, err := rand.Int(rand.Reader, big.NewInt(int64(d.DiceValue))); err != nil {
-			return 0, err
+	for range i.DiceCount {
+		if r, err := rand.Int(rand.Reader, big.NewInt(int64(i.DiceValue))); err != nil {
+			return
 		} else {
 			n += int(r.Int64()) + 1
 		}
 	}
 
 	//add DiceMarkup
-	n += d.DiceMarkup
+	n += i.DiceMarkup
 
 	//store result in Value
-	d.Value = n
-	return n, nil
+	i.Value = n
 }

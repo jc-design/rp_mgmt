@@ -12,25 +12,26 @@ import (
 )
 
 type Character struct {
-	Id                      string
-	Name                    string
-	Image                   string
-	RuleSet                 rules.RuleSet
-	Properties              map[string]Element
-	propertiesValidElements map[string][]FieldType
+	Id                      string        `json:"id"`
+	Name                    string        `json:"name"`
+	Image                   string        `json:"image"`
+	RuleSet                 rules.RuleSet `json:"ruleset"`
+	Properties              []Element     `json:"properties"`
+	propertiesValidElements []FieldType
 }
 
-func NewCharacter(r rules.RuleSet, prop []Element) Character {
+func NewCharacter(r rules.RuleSet, prop []Element) *Character {
 
-	c := Character{
+	copyElements := make([]Element, len(prop))
+	copy(copyElements, prop)
+	return &Character{
 		uuid.New().String(),
 		"New Character",
 		"",
 		r,
-		elementsToMap(&prop),
-		make(map[string][]FieldType),
+		copyElements,
+		make([]FieldType, 0),
 	}
-	return c
 }
 
 func LoadCharacters(f rules.Folderstructure, r rules.RuleSet) ([]Character, error) {
@@ -69,6 +70,23 @@ func SaveCharacters(f rules.Folderstructure, c *[]Character) error {
 	return nil
 }
 
+func LoadElements(f rules.Folderstructure) ([]Element, error) {
+
+	e := make([]Element, 0, 20)
+
+	data, err := os.ReadFile(filepath.Join(f.Data, "characterproperties.json"))
+	if err != nil {
+		return e, err
+	}
+
+	err = json.Unmarshal(data, &e)
+	if err != nil {
+		return e, err
+	}
+
+	return e, nil
+}
+
 func (c *Character) UnmarshalJSON(data []byte) error {
 
 	var jsonData map[string]interface{}
@@ -94,49 +112,43 @@ func (c *Character) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	var p []Element
-	err = mapstructure.Decode(jsonData["Properties"], &p)
+
+	err = mapstructure.Decode(jsonData["Properties"], &c.Properties)
 	if err != nil {
 		return err
 	}
-	c.Properties = elementsToMap(&p)
 
 	return nil
 }
 
-func (c *Character) MarshalJSON() ([]byte, error) {
+// func (c *Character) MarshalJSON() ([]byte, error) {
 
-	return json.Marshal(map[string]interface{}{
-		"Id":         c.Id,
-		"Name":       c.Name,
-		"RuleSet":    c.RuleSet,
-		"Properties": mapToElements(&c.Properties),
-	})
-}
+// 	return json.Marshal(map[string]interface{}{
+// 		"id":         c.Id,
+// 		"name":       c.Name,
+// 		"ruleset":    c.RuleSet,
+// 		"properties": c.Properties,
+// 	})
+// }
 
-func elementsToMap(src *[]Element) map[string]Element {
-	var result = make(map[string]Element)
-	for _, v := range *src {
-		result[v.Identify()] = v
-	}
-	return result
-}
+// func elementsToMap(src *[]Element) map[string]Element {
+// 	var result = make(map[string]Element)
+// 	for _, v := range *src {
+// 		result[v.Identify()] = v
+// 	}
+// 	return result
+// }
 
-func mapToElements(src *map[string]Element) []Element {
-	var result = make([]Element, 0, 10)
-	for _, v := range *src {
-		result = append(result, v)
-	}
-	return result
-}
+// func mapToElements(src *map[string]Element) []Element {
+// 	var result = make([]Element, 0, 10)
+// 	for _, v := range *src {
+// 		result = append(result, v)
+// 	}
+// 	return result
+// }
 
+// Func needed for RuleFact interface
+// it's needed for the grule-engine validation
 func (c *Character) FactKey() string {
 	return "Character"
 }
-
-func (c *Character) Check() bool {
-	return true
-}
-
-//Add check- and setfunction
-//func (c *Character) FuncName ...
