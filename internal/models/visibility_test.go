@@ -13,7 +13,7 @@ func TestVisbilityJsonUnMarshal(t *testing.T) {
 	jsonStr := `{"Visibility":"creation|levelup"}`
 
 	e := struct {
-		Visibility models.Visibility
+		Visibility models.Activationmode
 	}{}
 	err := json.Unmarshal([]byte(jsonStr), &e)
 	if err != nil {
@@ -27,7 +27,7 @@ func TestVisbilityJsonMarshal(t *testing.T) {
 	jsonStr := `{"Visibility":"creation|levelup"}`
 
 	e := struct {
-		Visibility models.Visibility
+		Visibility models.Activationmode
 	}{Visibility: 3}
 	json, err := json.Marshal(&e)
 	if err != nil {

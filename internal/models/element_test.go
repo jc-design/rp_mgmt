@@ -39,20 +39,9 @@ func TestElementJsonUnMarshal(t *testing.T) {
 
 func TestElementJsonMarshal(t *testing.T) {
 	e := models.Element{
-		Type: models.FieldType{
-			Type:        "Test",
-			Id:          "Test",
-			Label:       "Test",
-			Description: "Test",
-		},
-		ReferenceType: models.FieldType{
-			Type:        "Test",
-			Id:          "Test",
-			Label:       "Test",
-			Description: "Test",
-		},
-		Value:      &models.StringValue{StringValue: "Test"},
-		Visibility: 5,
+		Fieldtype:  models.Fieldtype{"fieldtype", "id", "label", "description"},
+		Value:      &models.Intvalue{10},
+		Visibility: models.Activationmode(5),
 	}
 	j, err := json.Marshal(&e)
 	if err != nil {
@@ -95,6 +84,6 @@ func TestElementExecuteDiceFunction(t *testing.T) {
 	err := json.Unmarshal([]byte(jsonStr), &e)
 	assert.NoError(t, err)
 
-	e.Value.Execute()
-	assert.NotEqual(t, "0", e.Value.String())
+	e.Execute()
+	assert.NotEqual(t, "0", e.Value.GetInfo("value"))
 }

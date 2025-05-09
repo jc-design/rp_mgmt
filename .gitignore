@@ -1,10 +1,11 @@
 # Ignore all .log files
 *.log
 __debug_*
-*workspace
+*workspace*
 
 # Ignore vscodes directory
 .vscode/
+build/
 
 # Ignore all .env files
 env

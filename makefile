@@ -14,11 +14,11 @@ all: build test
 
 # Target to build the Go project
 build: prepare
-	go build -o "./$(OUTPUT_BINARY)" $(GO_SOURCE)
+	go build -o "./build/$(OUTPUT_BINARY)" $(GO_SOURCE)
 
 run:
-	go build -o "./$(OUTPUT_BINARY)" $(GO_SOURCE)
-	./$(OUTPUT_BINARY)
+	go build -o "./build/$(OUTPUT_BINARY)" $(GO_SOURCE)
+	./build/$(OUTPUT_BINARY)
 
 test:
 	go test ./... -v

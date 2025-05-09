@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 )
 
 type Dice struct {
@@ -15,59 +16,76 @@ type Dice struct {
 	Abr        string `json:"abr"`
 }
 
-func (i *Dice) SetValue(input ...any) {
-	if len(input) > 0 {
-		first_input := input[0]
-		switch input := first_input.(type) {
+func (d *Dice) SetValue(input ...any) {
+	for _, val := range input {
+		switch ass := val.(type) {
 		case int:
-			i.Value = input
+			d.Value = ass
 		case string:
-			parsed, err := strconv.ParseInt(input, 10, 64)
+			parsed, err := strconv.ParseInt(ass, 10, 64)
 			if err == nil {
-				i.Value = int(parsed)
+				d.Value = int(parsed)
 			}
+		case []int:
+			if len(ass) >= 1 && ass[0] > 0 {
+				d.DiceValue = ass[0]
+			} else if len(ass) >= 2 && ass[1] > 0 {
+				d.DiceCount = ass[1]
+			} else if len(ass) >= 3 {
+				d.DiceMarkup = ass[2]
+			} else if len(ass) >= 4 {
+				d.Value = ass[3]
+			}
+		default:
+			fmt.Printf("could not work with input of type %T", ass)
 		}
 	}
 }
 
-func (i *Dice) String() string {
-	return fmt.Sprintf("%d", i.Value)
-}
-
-func (i *Dice) InfosAsString() string {
-	switch {
-	case i.DiceMarkup == 0:
-		return fmt.Sprintf("%d%s%d", i.DiceCount, i.Abr, i.DiceValue)
-	case i.DiceMarkup < 0:
-		return fmt.Sprintf("%d%s%d %d", i.DiceCount, i.Abr, i.DiceValue, i.DiceMarkup)
-	case i.DiceMarkup > 0:
-		return fmt.Sprintf("%d%s%d +%d", i.DiceCount, i.Abr, i.DiceValue, i.DiceMarkup)
+func (d *Dice) GetInfo(key string) string {
+	switch strings.ToLower(key) {
+	case description:
+		switch {
+		case d.DiceMarkup == 0:
+			return fmt.Sprintf("%d%s%d", d.DiceCount, d.Abr, d.DiceValue)
+		case d.DiceMarkup < 0:
+			return fmt.Sprintf("%d%s%d %d", d.DiceCount, d.Abr, d.DiceValue, d.DiceMarkup)
+		case d.DiceMarkup > 0:
+			return fmt.Sprintf("%d%s%d +%d", d.DiceCount, d.Abr, d.DiceValue, d.DiceMarkup)
+		default:
+			return ""
+		}
+	case identify:
+		return fmt.Sprintf("%d%d%d", d.DiceValue, d.DiceCount, d.DiceMarkup)
+	case value:
+		return fmt.Sprintf("%d", d.Value)
 	default:
 		return ""
 	}
 }
 
-func (i *Dice) Execute() {
-	if !(i.DiceValue > 0 && i.DiceValue <= 100) {
-		return
+func (d *Dice) Execute() (any, error) {
+	//check conditions and return error if needed
+	if !(d.DiceValue > 0 && d.DiceValue <= 100) {
+		return nil, fmt.Errorf("dicevalue must be between 1 and 100 included")
 	}
-	if !(i.DiceMarkup >= -100 && i.DiceCount <= 100) {
-		return
+	if !(d.DiceMarkup >= -100 && d.DiceCount <= 100) {
+		return nil, fmt.Errorf("dicemarku must be between -100 and 100 included")
 	}
 
 	//get random number as many times as DiceCount
 	n := 0
-	for range i.DiceCount {
-		if r, err := rand.Int(rand.Reader, big.NewInt(int64(i.DiceValue))); err != nil {
-			return
+	for range d.DiceCount {
+		if r, err := rand.Int(rand.Reader, big.NewInt(int64(d.DiceValue))); err != nil {
+			return nil, err
 		} else {
 			n += int(r.Int64()) + 1
 		}
 	}
 
 	//add DiceMarkup
-	n += i.DiceMarkup
+	n += d.DiceMarkup
 
-	//store result in Value
-	i.Value = n
+	//return value
+	return n, nil
 }

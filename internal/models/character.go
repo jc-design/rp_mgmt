@@ -1,137 +1,166 @@
 package models
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
+	"strings"
+
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/jc-design/rp_mgmt/internal/rules"
-	"github.com/mitchellh/mapstructure"
 )
 
 type Character struct {
-	Id                      string        `json:"id"`
-	Name                    string        `json:"name"`
-	Image                   string        `json:"image"`
-	RuleSet                 rules.RuleSet `json:"ruleset"`
-	Properties              []Element     `json:"properties"`
-	propertiesValidElements *[]FieldType
+	Id            string         `json:"id"`
+	Name          string         `json:"name"`
+	Image         string         `json:"image"`
+	Level         int            `json:"level"`
+	Exp           int            `json:"exp"`
+	RuleSet       rules.Ruleset  `json:"ruleset"`
+	Properties    []*Element     `json:"properties"`
+	Status        Activationmode `json:"-"`
+	Deleted       bool           `json:"-"`
+	Allfieldtypes []*Fieldtype   `json:"-"`
 }
 
-func NewCharacter(r rules.RuleSet, prop []Element, valids *[]FieldType) *Character {
+// Create a new Character
+func NewCharacter(r rules.Ruleset, prop []*Element, types []*Fieldtype) *Character {
 
-	copyElements := make([]Element, len(prop))
+	c := Character{}
+	copyElements := make([]*Element, len(prop))
 	copy(copyElements, prop)
-	return &Character{
-		uuid.New().String(),
-		"New Character",
-		"",
-		r,
-		copyElements,
-		valids,
-	}
+
+	c.Id = uuid.New().String()
+	c.Name = "New Character"
+	c.Image = ""
+	c.Level = 1
+	c.Exp = 0
+	c.RuleSet = r
+	c.Properties = copyElements
+	c.Status = Activationmode(Creation)
+	c.Allfieldtypes = types
+
+	return &c
 }
-
-func LoadCharacters(f rules.Folderstructure, r rules.RuleSet) ([]Character, error) {
-	var cs []Character
-
-	data, err := os.ReadFile(filepath.Join(f.Characters, "characters.json"))
-	if err != nil {
-		return cs, err
-	}
-
-	err = json.Unmarshal(data, &cs)
-	if err != nil {
-		return cs, err
-	}
-
-	for _, c := range cs {
-		if c.RuleSet != r {
-			return cs, fmt.Errorf("error loading characters due to incomapatible ruleset. "+
-				"Loaded ruleset: %s, requested ruleset: %s", c.RuleSet, r)
-		}
-	}
-	return cs, nil
-}
-
-func SaveCharacters(f rules.Folderstructure, c *[]Character) error {
-
-	bytes, err := json.MarshalIndent(c, "", " ")
-	if err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(filepath.Join(f.Characters, "characters.json"), bytes, 0644); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Character) UnmarshalJSON(data []byte) error {
-
-	var jsonData map[string]interface{}
-
-	err := json.Unmarshal(data, &jsonData)
-	if err != nil {
-		return err
-	}
-
-	if s, ok := jsonData["Id"].(string); ok {
-		c.Id = s
-	} else {
-		return fmt.Errorf("loading aborted. No field 'Id' found")
-	}
-
-	if s, ok := jsonData["Name"].(string); ok {
-		c.Name = s
-	} else {
-		return fmt.Errorf("loading aborted. No field 'Name' founf")
-	}
-
-	err = mapstructure.Decode(jsonData["RuleSet"], &c.RuleSet)
-	if err != nil {
-		return err
-	}
-
-	err = mapstructure.Decode(jsonData["Properties"], &c.Properties)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// func (c *Character) MarshalJSON() ([]byte, error) {
-
-// 	return json.Marshal(map[string]interface{}{
-// 		"id":         c.Id,
-// 		"name":       c.Name,
-// 		"ruleset":    c.RuleSet,
-// 		"properties": c.Properties,
-// 	})
-// }
-
-// func elementsToMap(src *[]Element) map[string]Element {
-// 	var result = make(map[string]Element)
-// 	for _, v := range *src {
-// 		result[v.Identify()] = v
-// 	}
-// 	return result
-// }
-
-// func mapToElements(src *map[string]Element) []Element {
-// 	var result = make([]Element, 0, 10)
-// 	for _, v := range *src {
-// 		result = append(result, v)
-// 	}
-// 	return result
-// }
 
 // Func needed for RuleFact interface
 // it's needed for the grule-engine validation
 func (c *Character) FactKey() string {
 	return "Character"
+}
+
+func (c *Character) GetElement(ident string) *Element {
+	for i, e := range c.Properties {
+		if e.Fieldtype.Identify() == ident {
+			return c.Properties[i]
+		}
+	}
+	return nil
+}
+
+func (c *Character) IsElementDirty(ident string) bool {
+	e := c.GetElement(ident)
+	if e == nil {
+		return false
+	}
+
+	return e.isDirty
+}
+
+func (c *Character) GetValueInfo(ident, key string) string {
+	e := c.GetElement(ident)
+	if e == nil {
+		return ""
+	}
+
+	return e.Value.GetInfo(key)
+}
+
+func (c *Character) GetValueAsInt(ident string) int {
+	e := c.GetElement(ident)
+	if e == nil {
+		return 0
+	}
+
+	switch ass := e.Value.(type) {
+	case *Intvalue:
+		return ass.Intvalue
+	case *Dice:
+		return ass.Value
+	}
+	return 0
+}
+
+func (c *Character) IsValueInRange(ident string, min, max int) bool {
+	e := c.GetElement(ident)
+	if e == nil {
+		return false
+	}
+
+	switch ass := e.Value.(type) {
+	case *Intvalue:
+		if ass.Intvalue >= min && ass.Intvalue <= max {
+			return true
+		}
+	case *Dice:
+		if ass.Value >= min && ass.Value <= max {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Character) IsValueInList(ident string, list string) bool {
+	e := c.GetElement(ident)
+	if e == nil {
+		return false
+	}
+	l := strings.Split(list, ";")
+	if slices.Contains(l, e.Value.GetInfo(id)) || slices.Contains(l, e.Value.GetInfo(value)) {
+		return true
+	}
+
+	return false
+}
+
+func (c *Character) SetValueFromList(ident, fieldtype, list string) {
+	e := c.GetElement(ident)
+	if e == nil {
+		return
+	}
+
+	l := strings.Split(list, ";")
+	types := make([]*Fieldtype, 0)
+	for _, field := range c.Allfieldtypes {
+		if fieldtype == field.Type && slices.Contains(l, field.Id) {
+			types = append(types, field)
+		}
+	}
+
+	switch ass := e.Value.(type) {
+	case *Stringvalue:
+		for _, field := range types {
+			if field.Label == ass.Stringvalue {
+				return
+			}
+		}
+		e.SetValue(types[0].Label)
+	case *Typevalue:
+		ass.Validvalues = types
+		for _, field := range types {
+			if field.Id == ass.GetInfo(id) {
+				return
+			}
+		}
+		e.SetValue(types[0])
+	}
+}
+
+func (c *Character) SetDiceProperties(ident string, dicevalue, dicecount int64, dicemarkup float64) {
+	e := c.GetElement(ident)
+	if e == nil {
+		return
+	}
+
+	arr := []int{int(dicevalue), int(dicecount), int(dicemarkup)}
+	e.SetValue(arr)
 }

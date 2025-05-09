@@ -1,9 +1,6 @@
 package models
 
-import "fmt"
-
 type ValueElementer interface {
-	fmt.Stringer
 	ValueSetter
 	Informer
 	Executor
@@ -14,9 +11,16 @@ type ValueSetter interface {
 }
 
 type Executor interface {
-	Execute()
+	Execute() (any, error)
 }
 
 type Informer interface {
-	InfosAsString() string
+	GetInfo(key string) string
 }
+
+const (
+	description string = "description"
+	id          string = "id"
+	identify    string = "identify"
+	value       string = "value"
+)

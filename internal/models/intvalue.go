@@ -3,33 +3,38 @@ package models
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
-type IntValue struct {
-	IntValue int `json:"intvalue"`
+type Intvalue struct {
+	Intvalue int `json:"intvalue"`
 }
 
-func (i *IntValue) SetValue(input ...any) {
-	if len(input) > 0 {
-		first_input := input[0]
-		switch input := first_input.(type) {
+func (i *Intvalue) SetValue(input ...any) {
+	for _, val := range input {
+		switch ass := val.(type) {
 		case int:
-			i.IntValue = input
+			i.Intvalue = ass
 		case string:
-			parsed, err := strconv.ParseInt(input, 10, 64)
+			parsed, err := strconv.ParseInt(ass, 10, 64)
 			if err == nil {
-				i.IntValue = int(parsed)
+				i.Intvalue = int(parsed)
 			}
+		default:
+			fmt.Printf("could not work with input of type %T", ass)
 		}
 	}
 }
 
-func (i *IntValue) String() string {
-	return fmt.Sprintf("%d", i.IntValue)
+func (i *Intvalue) GetInfo(key string) string {
+	switch strings.ToLower(key) {
+	case value:
+		return fmt.Sprintf("%d", i.Intvalue)
+	default:
+		return ""
+	}
 }
 
-func (i *IntValue) InfosAsString() string {
-	return ""
+func (i *Intvalue) Execute() (any, error) {
+	return nil, nil
 }
-
-func (i *IntValue) Execute() {}

@@ -11,14 +11,14 @@ const (
 	LevelupRules  string = "levelup"
 )
 
-type RuleSet struct {
-	Name    string
-	Version string
+type Ruleset struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
-func LoadRuleSet(f Folderstructure) (RuleSet, error) {
+func LoadRuleSet(f Folderstructure) (Ruleset, error) {
 
-	r := RuleSet{}
+	r := Ruleset{}
 
 	data, err := os.ReadFile(filepath.Join(f.Rules, "ruleset.json"))
 	if err != nil {

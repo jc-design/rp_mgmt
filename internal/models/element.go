@@ -3,38 +3,51 @@ package models
 import (
 	"encoding/json"
 	"errors"
-	"os"
-	"path/filepath"
+	"fmt"
 	"strings"
 
-	"github.com/jc-design/rp_mgmt/internal/rules"
 	"github.com/mitchellh/mapstructure"
 )
 
 type Element struct {
-	Type          FieldType      `json:"type"`
-	ReferenceType FieldType      `json:"referencetype"`
-	Value         ValueElementer `json:"value"`
-	Visibility    Visibility     `json:"visibility"`
-	isValidated   bool
-	isDirty       bool
-	errorMsg      string
-}
-
-func (e *Element) Identify() string {
-	return e.Type.Identify()
+	Fieldtype   Fieldtype      `json:"type"`
+	Value       ValueElementer `json:"value"`
+	Visibility  Activationmode `json:"visibility"`
+	Editable    Activationmode `json:"editable"`
+	ErrorMsg    string         `json:"-"`
+	isValidated bool
+	isDirty     bool
 }
 
 func (e *Element) RulesReset() {
 	e.isDirty = true
-	e.isValidated = false
-	e.errorMsg = ""
 }
 
 func (e *Element) RulesApplied(validation bool, err string) {
 	e.isDirty = false
 	e.isValidated = validation
-	e.errorMsg = err
+	e.ErrorMsg = err
+}
+
+func (e *Element) Execute() {
+	retval, err := e.Value.Execute()
+	if err != nil {
+		e.RulesApplied(false, fmt.Sprintf("%v", err))
+		return
+	}
+	if retval != nil {
+		e.SetValue(retval)
+	}
+	e.RulesReset()
+}
+
+func (e *Element) SetValue(input ...any) {
+	e.Value.SetValue(input...)
+	e.RulesReset()
+}
+
+func (e *Element) GetValidation() bool {
+	return e.isValidated
 }
 
 func (e *Element) UnmarshalJSON(data []byte) error {
@@ -46,35 +59,29 @@ func (e *Element) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	var t FieldType
+	var t Fieldtype
 	err = mapstructure.Decode(jsonData["type"], &t)
 	if err == nil && t.Type != "" {
-		e.Type = t
+		e.Fieldtype = t
 	} else if err == nil && len(strings.TrimSpace(t.Type)) == 0 {
-		return errors.New("field [type] missing")
+		return errors.New("[type] must be set")
 	} else {
-		return errors.New("failed to create field named [type]")
-	}
-
-	var rt FieldType
-	err = mapstructure.Decode(jsonData["referencetype"], &rt)
-	if err == nil {
-		e.ReferenceType = rt
+		return errors.New("failed to create [type]")
 	}
 
 	val, ok := jsonData["value"].(map[string]interface{})
 	if !ok {
-		return errors.New("field [value] missing")
+		return errors.New("failed to create [value]")
 	}
 
 	if val["intvalue"] != nil {
-		var i IntValue
+		var i Intvalue
 		err := mapstructure.Decode(val, &i)
 		if err == nil {
 			e.Value = &i
 		}
 	} else if val["stringvalue"] != nil {
-		var i StringValue
+		var i Stringvalue
 		err := mapstructure.Decode(val, &i)
 		if err == nil {
 			e.Value = &i
@@ -86,36 +93,23 @@ func (e *Element) UnmarshalJSON(data []byte) error {
 			e.Value = &i
 		}
 	} else if val["type"] != nil {
-		var i FieldType
-		err := mapstructure.Decode(val, &i)
+		var i = Typevalue{}
+		err := mapstructure.Decode(val, &i.Fieldvalue)
 		if err == nil {
 			e.Value = &i
 		}
 	} else {
-		return errors.New("field [value] missing")
+		return errors.New("[value] must be set")
 	}
 
 	vis, ok := jsonData["visibility"].(string)
 	if ok {
 		e.Visibility.FromString(vis)
 	}
+	edit, ok := jsonData["editable"].(string)
+	if ok {
+		e.Editable.FromString(edit)
+	}
 
 	return nil
-}
-
-func LoadElements(f rules.Folderstructure) ([]Element, error) {
-
-	e := make([]Element, 0, 20)
-
-	data, err := os.ReadFile(filepath.Join(f.Data, "characterproperties.json"))
-	if err != nil {
-		return e, err
-	}
-
-	err = json.Unmarshal(data, &e)
-	if err != nil {
-		return e, err
-	}
-
-	return e, nil
 }

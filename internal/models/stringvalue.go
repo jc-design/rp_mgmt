@@ -1,25 +1,34 @@
 package models
 
-type StringValue struct {
-	StringValue string `json:"stringvalue"`
+import (
+	"fmt"
+	"strings"
+)
+
+type Stringvalue struct {
+	Stringvalue string `json:"stringvalue"`
 }
 
-func (i *StringValue) SetValue(input ...any) {
-	if len(input) > 0 {
-		first_input := input[0]
-		switch input := first_input.(type) {
+func (s *Stringvalue) SetValue(input ...any) {
+	for _, val := range input {
+		switch ass := val.(type) {
 		case string:
-			i.StringValue = input
+			s.Stringvalue = ass
+		default:
+			fmt.Printf("could not work with input of type %T", ass)
 		}
 	}
 }
 
-func (i *StringValue) String() string {
-	return i.StringValue
+func (s *Stringvalue) GetInfo(key string) string {
+	switch strings.ToLower(key) {
+	case value:
+		return s.Stringvalue
+	default:
+		return ""
+	}
 }
 
-func (i StringValue) InfosAsString() string {
-	return ""
+func (s Stringvalue) Execute() (any, error) {
+	return nil, nil
 }
-
-func (i StringValue) Execute() {}
