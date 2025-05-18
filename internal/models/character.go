@@ -90,7 +90,7 @@ func (c *Character) GetValueAsInt(ident string) int {
 	return 0
 }
 
-func (c *Character) IsValueInRange(ident string, min, max int) bool {
+func (c *Character) IsValueInRange(ident string, min, max int64) bool {
 	e := c.GetElement(ident)
 	if e == nil {
 		return false
@@ -98,11 +98,11 @@ func (c *Character) IsValueInRange(ident string, min, max int) bool {
 
 	switch ass := e.Value.(type) {
 	case *Intvalue:
-		if ass.Intvalue >= min && ass.Intvalue <= max {
+		if ass.Intvalue >= int(min) && ass.Intvalue <= int(max) {
 			return true
 		}
 	case *Dice:
-		if ass.Value >= min && ass.Value <= max {
+		if ass.Value >= int(min) && ass.Value <= int(max) {
 			return true
 		}
 	}
@@ -146,11 +146,13 @@ func (c *Character) SetValueFromList(ident, fieldtype, list string) {
 		e.SetValue(types[0].Label)
 	case *Typevalue:
 		ass.Validvalues = types
+
 		for _, field := range types {
 			if field.Id == ass.GetInfo(id) {
 				return
 			}
 		}
+
 		e.SetValue(types[0])
 	}
 }

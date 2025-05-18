@@ -8,10 +8,29 @@ import (
 	"path/filepath"
 	"sync"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/jc-design/rp_mgmt/internal/models"
 	"github.com/jc-design/rp_mgmt/internal/rules"
 )
+
+const (
+	description string = "description"
+	id          string = "id"
+	identify    string = "identify"
+	value       string = "value"
+)
+
+type CharacterController struct {
+	Model         *CharacterModel
+	App           fyne.App
+	Window        fyne.Window
+	CharacterList *widget.List
+	mutex         sync.Mutex
+	bindings      map[string]fyne.CanvasObject
+}
 
 type CharacterModel struct {
 	allTypes            []*models.Fieldtype
@@ -20,16 +39,6 @@ type CharacterModel struct {
 	Characters          []*models.Character
 	SelectedCharacter   *models.Character
 	creationRuleservice rules.RulesApplier
-}
-
-type CharacterView struct {
-	widget   *widget.Entry
-	onSubmit func()
-}
-
-type CharacterController struct {
-	Model *CharacterModel
-	View  *CharacterView
 }
 
 // func needed for RuleFact interface
@@ -42,6 +51,30 @@ func (c *CharacterModel) FactKey() string {
 // it's needed for the grule-engine validation
 func (c *CharacterController) FactKey() string {
 	return "Controller"
+}
+
+func NewCharacterController(f rules.Folderstructure, windowtitel string) (*CharacterController, error) {
+	ctrl := CharacterController{}
+
+	ctrl.App = app.New()
+	ctrl.Window = ctrl.App.NewWindow(windowtitel)
+	ctrl.Window.Resize(fyne.NewSize(640, 480))
+	ctrl.Window.CenterOnScreen()
+
+	ctrl.App.Settings().SetTheme(theme.LightTheme())
+
+	ctrl.mutex = sync.Mutex{}
+	ctrl.bindings = make(map[string]fyne.CanvasObject)
+
+	var err error
+	ctrl.Model, err = NewCharacterModel(f)
+	if err != nil {
+		return nil, err
+	}
+
+	ctrl.CharacterList = ctrl.CreateCharacterList()
+
+	return &ctrl, nil
 }
 
 func NewCharacterModel(f rules.Folderstructure) (*CharacterModel, error) {
@@ -216,6 +249,26 @@ func (cm *CharacterModel) NewCharacter() {
 
 func (cm *CharacterModel) ApplyCreationRules() {
 	cm.creationRuleservice.ApplyRules(cm.SelectedCharacter)
+}
+
+func (ctrl *CharacterController) addbindings(key string, obj fyne.CanvasObject) {
+	ctrl.mutex.Lock()
+
+	ctrl.bindings[key] = obj
+
+	ctrl.mutex.Unlock()
+}
+
+func (ctrl *CharacterController) refreshbindings(key string) {
+	ctrl.mutex.Lock()
+
+	for k, v := range ctrl.bindings {
+		if k != key && v != nil {
+			v.Refresh()
+		}
+	}
+
+	ctrl.mutex.Unlock()
 }
 
 func (cm *CharacterModel) newRuleservice(f rules.Folderstructure, rulefn, name, version string) (rules.RulesApplier, error) {

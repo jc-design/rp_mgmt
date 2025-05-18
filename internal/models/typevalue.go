@@ -14,6 +14,13 @@ type Typevalue struct {
 func (i *Typevalue) SetValue(input ...any) {
 	for _, val := range input {
 		switch ass := val.(type) {
+		case string:
+			for _, v := range i.Validvalues {
+				if ass == v.Label {
+					i.Fieldvalue = *v
+					return
+				}
+			}
 		case *Fieldtype:
 			i.Fieldvalue = *ass
 		case []*Fieldtype:
