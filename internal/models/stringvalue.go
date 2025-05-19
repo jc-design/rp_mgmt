@@ -22,7 +22,7 @@ func (s *Stringvalue) SetValue(input ...any) {
 
 func (s *Stringvalue) GetInfo(key string) string {
 	switch strings.ToLower(key) {
-	case value:
+	case Value:
 		return s.Stringvalue
 	default:
 		return ""

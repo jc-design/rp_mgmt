@@ -33,13 +33,13 @@ func (i *Typevalue) SetValue(input ...any) {
 
 func (t *Typevalue) GetInfo(key string) string {
 	switch strings.ToLower(key) {
-	case description:
+	case Description:
 		return t.Fieldvalue.Description
-	case id:
+	case Id:
 		return t.Fieldvalue.Id
-	case identify:
+	case Identify:
 		return t.Fieldvalue.Identify()
-	case value:
+	case Value:
 		return t.Fieldvalue.Label
 	default:
 		return ""

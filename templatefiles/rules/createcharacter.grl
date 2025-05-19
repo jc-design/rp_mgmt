@@ -1,0 +1,95 @@
+/*
+Ausführbare Befehle:
+[] Character.GetElement("type|id").RulesReset()
+    [] die Regleprüfung für das Element wird zurückgesetzt
+
+[] Character.IsElementDirty("type|id") => gibt true oder false zurück
+    [] true: es findet eine Regelprüfung für das gewählte ELement statt
+    [] false: es findet keine Regelprüfung statt
+
+[] Character.GetElement("type|id").RulesApplied(true, "")
+    [] der gespiecherte Wert des gewählten Elements ist gültig
+
+[] Character.GetElement("type|id").RulesApplied(false, "Fehlermeldung")
+    [] der gespiecherte Wert des gewählten Elements ist ungültig
+    [] die angegebene Fehlermeldung wird gespeichert
+
+[] Character.SetValueFromList("type|id", "id", "wert1;wert2;...");
+    [] die Inhaltsliste des Elements wird entsprechend der Angabe gesetzt
+  
+[] Character.GetValueInfo("type|id", "Rückgabe") => gibt eine Zeichenfolge zurück
+    [] mögliche Wert für Rückgabe => id, label, value
+
+[] Character.GetValueAsInt("type|id") => gibt eine Zahl zurück
+
+[] Character.IsValueInRange("type|id", 1, 100) => gibt true oder false zurück
+    [] die Funktion prüft, ob der Wert des gewählten Elements innerhalb der angegebene Grenzen liegt
+
+[] Character.IsValueInList("type|id", "wert1;wert2;...") => gibt true oder false zurück
+    [] die Funktion prüft, ob der Wert des gewählten Elements in der angegebene Liste von Werten enthalten ist
+    [] die Werte der Prüfliste werden mit ; getrennt
+
+[] Character.SetDiceProperties("type|id", Augenzahl_Würfel, Anzahl_Würfel, Bonus_Würfel)
+    [] mit dieser Funktion kann der zugrunde liegende Würfeltyp nachträglich geändert werden
+    [] die Werte sind als Ganzzahl oder Formeln zu definieren => 100, 4, 8.0 (technisch muss die letzte Zahl immer als Fließkommazahl ermittelt werden)
+    [] 0-Werte werden bei den ersten beiden Einträgen ignoriert und ändern die bestehenden Eingeschaften nicht
+
+[] Changed("Character") => Informiert die Regelengine, dass der Wert geändert wurde, damit nachfolgende Regeln aktuelle Werte nutzt
+
+[] Retract("NameDerRegel") => entfernt die Regel aus der Prüfungsrunde, nachdem die Regel angewandt wurde
+
+Mehr Infos zur Regelengine: https://github.com/hyperjumptech/grule-rule-engine
+*/
+
+rule Regel1 "Beschreibung Regel1" salience 99 {
+  when
+    Character.IsElementDirty("type|id")
+  then
+    Character.GetElement("baseproperty|race").RulesApplied(true, "");
+
+    Changed("Character");
+    Retract("Regel1");
+}
+
+rule Regel2 "Beschreibung Regel2" salience 98 {
+  when
+    Character.IsElementDirty("baseproperty|class") && 
+    Character.GetValueInfo("baseproperty|race", "id") == "hu"
+  then
+    Character.GetElement("baseproperty|class").RulesApplied(true, "");
+    Character.SetValueFromList("baseproperty|class", "class", "as;bb;gl;hae;kr;sp;wa;ba;or;dr;hx;ma;pb;ps;sc;er;mg;sg;tm;hl;rm;th;ws");
+    Changed("Character");
+    Retract("ValidateClass_hu");
+}
+
+rule Regel3 "Beschreibung Regel3" salience 97 {
+  when
+    Character.IsElementDirty("baseproperty|st") &&
+    Character.IsValueInRange("baseproperty|st", 1, 100) == true &&
+    Character.GetValueInfo("baseproperty|race", "id") == "hu"
+  then
+    Character.GetElement("baseproperty|st").RulesApplied(true, "");
+    Changed("Character");
+    Retract("Regel3");
+}
+
+rule Regel4 "Beschreibung Regel4" salience 97 {
+  when
+    Character.IsElementDirty("baseproperty|st") &&
+    Character.IsValueInRange("baseproperty|st", 1, 100) == false &&
+    Character.GetValueInfo("baseproperty|race", "id") == "hu"
+  then
+    Character.GetElement("baseproperty|st").RulesApplied(false, "Humans haben eine Stärke von 1 - 100.");
+    Changed("Character");
+    Retract("Regel4");
+}
+
+rule Regel5 "Beschreibung Regel5" salience 96 {
+  when
+    Character.IsElementDirty("baseproperty|pa")
+  then
+    Character.GetElement("baseproperty|pa").RulesApplied(true, "");
+    Character.SetDiceProperties("baseproperty|pa", -1, -1, 4 * Character.GetValueAsInt("baseproperty|in") / 10 - 20);
+    Changed("Character");
+    Retract("Regel5");
+}

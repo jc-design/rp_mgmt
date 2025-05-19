@@ -19,8 +19,8 @@ type Informer interface {
 }
 
 const (
-	description string = "description"
-	id          string = "id"
-	identify    string = "identify"
-	value       string = "value"
+	Description string = "description"
+	Id          string = "id"
+	Identify    string = "identify"
+	Value       string = "value"
 )

@@ -115,7 +115,7 @@ func (c *Character) IsValueInList(ident string, list string) bool {
 		return false
 	}
 	l := strings.Split(list, ";")
-	if slices.Contains(l, e.Value.GetInfo(id)) || slices.Contains(l, e.Value.GetInfo(value)) {
+	if slices.Contains(l, e.Value.GetInfo(Id)) || slices.Contains(l, e.Value.GetInfo(Value)) {
 		return true
 	}
 
@@ -148,7 +148,7 @@ func (c *Character) SetValueFromList(ident, fieldtype, list string) {
 		ass.Validvalues = types
 
 		for _, field := range types {
-			if field.Id == ass.GetInfo(id) {
+			if field.Id == ass.GetInfo(Id) {
 				return
 			}
 		}

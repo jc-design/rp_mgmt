@@ -36,11 +36,13 @@ func NewStringvalueItem(ctrl *CharacterController, e *models.Element) *Stringval
 	sv.savevalue = func(s string) {
 		sv.data.SetValue(s)
 		sv.controller.Model.ApplyCreationRules()
+		sv.controller.refreshbindings(sv.data.Fieldtype.Identify())
 		sv.Refresh()
 	}
 
 	sv.ExtendBaseWidget(sv)
 
+	ctrl.addbindings(e.Fieldtype.Identify(), sv)
 	return sv
 }
 
@@ -85,7 +87,7 @@ func (sv *StringvalueItem) CreateRenderer() fyne.WidgetRenderer {
 func (sv *StringvalueItem) Refresh() {
 	sv.ExtendBaseWidget(sv)
 
-	sv.entry.Text = sv.data.Value.GetInfo(value)
+	sv.entry.Text = sv.data.Value.GetInfo(models.Value)
 	sv.errorLbl.Text = sv.data.ErrorMsg
 	if sv.data.ErrorMsg == "" {
 		sv.errorLbl.Hide()
@@ -93,7 +95,7 @@ func (sv *StringvalueItem) Refresh() {
 		sv.errorLbl.Show()
 	}
 	sv.layoutcont.Refresh()
-	canvas.Refresh(sv)
+	// canvas.Refresh(sv)
 }
 
 func (sv *StringvalueItem) MinSize() fyne.Size {

@@ -48,7 +48,6 @@ func (ctrl *CharacterController) CreateToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarAction(theme.ContentAddIcon(), func() {
 			ctrl.Model.NewCharacter()
-			ctrl.CharacterList.Refresh()
 		}),
 		widget.NewToolbarAction(theme.DocumentSaveIcon(), func() {}),
 		widget.NewToolbarAction(theme.FolderNewIcon(), func() {}),
@@ -72,8 +71,8 @@ func (ctrl *CharacterController) CreateCharacterList() *widget.List {
 			vbox := o.(*fyne.Container)
 			vbox.Objects[0].(*canvas.Text).Text = ctrl.Model.Characters[i].Name
 			vbox.Objects[1].(*canvas.Text).Text = fmt.Sprintf("R:%v - K:%v - G:%v",
-				ctrl.Model.Characters[i].GetValueInfo("baseproperty|race", value),
-				ctrl.Model.Characters[i].GetValueInfo("baseproperty|class", value),
+				ctrl.Model.Characters[i].GetValueInfo("baseproperty|race", models.Value),
+				ctrl.Model.Characters[i].GetValueInfo("baseproperty|class", models.Value),
 				ctrl.Model.Characters[i].Level,
 			)
 		})
@@ -108,14 +107,14 @@ func createElementConatainer(e *models.Element) *fyne.Container {
 			canvas.NewText(e.Fieldtype.Label, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Id, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Type, theme.Color(theme.ColorNameForeground)),
-			canvas.NewText(e.Value.GetInfo(value), theme.Color(theme.ColorNameForeground)),
+			canvas.NewText(e.Value.GetInfo(models.Value), theme.Color(theme.ColorNameForeground)),
 		)
 	case *models.Stringvalue:
 		return container.NewHBox(
 			canvas.NewText(e.Fieldtype.Label, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Id, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Type, theme.Color(theme.ColorNameForeground)),
-			canvas.NewText(e.Value.GetInfo(value), theme.Color(theme.ColorNameForeground)),
+			canvas.NewText(e.Value.GetInfo(models.Value), theme.Color(theme.ColorNameForeground)),
 		)
 
 	case *models.Dice:
@@ -123,7 +122,7 @@ func createElementConatainer(e *models.Element) *fyne.Container {
 			canvas.NewText(e.Fieldtype.Label, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Id, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Type, theme.Color(theme.ColorNameForeground)),
-			canvas.NewText(e.Value.GetInfo(value), theme.Color(theme.ColorNameForeground)),
+			canvas.NewText(e.Value.GetInfo(models.Value), theme.Color(theme.ColorNameForeground)),
 		)
 
 	case *models.Typevalue:
@@ -131,7 +130,7 @@ func createElementConatainer(e *models.Element) *fyne.Container {
 			canvas.NewText(e.Fieldtype.Label, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Id, theme.Color(theme.ColorNameForeground)),
 			canvas.NewText(e.Fieldtype.Type, theme.Color(theme.ColorNameForeground)),
-			canvas.NewText(e.Value.GetInfo(value), theme.Color(theme.ColorNameForeground)),
+			canvas.NewText(e.Value.GetInfo(models.Value), theme.Color(theme.ColorNameForeground)),
 		)
 
 	default:

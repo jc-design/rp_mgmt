@@ -3,7 +3,6 @@ module github.com/jc-design/rp_mgmt
 go 1.24.2
 
 require (
-	fyne.io/fyne v1.4.3
 	fyne.io/fyne/v2 v2.6.0
 	github.com/google/uuid v1.6.0
 	github.com/hyperjumptech/grule-rule-engine v1.15.0

@@ -28,7 +28,7 @@ func (i *Intvalue) SetValue(input ...any) {
 
 func (i *Intvalue) GetInfo(key string) string {
 	switch strings.ToLower(key) {
-	case value:
+	case Value:
 		return fmt.Sprintf("%d", i.Intvalue)
 	default:
 		return ""

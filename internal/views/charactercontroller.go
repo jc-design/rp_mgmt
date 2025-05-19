@@ -11,25 +11,17 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 	"github.com/jc-design/rp_mgmt/internal/models"
 	"github.com/jc-design/rp_mgmt/internal/rules"
 )
 
-const (
-	description string = "description"
-	id          string = "id"
-	identify    string = "identify"
-	value       string = "value"
-)
-
 type CharacterController struct {
-	Model         *CharacterModel
-	App           fyne.App
-	Window        fyne.Window
-	CharacterList *widget.List
-	mutex         sync.Mutex
-	bindings      map[string]fyne.CanvasObject
+	Model  *CharacterModel
+	App    fyne.App
+	Window fyne.Window
+
+	mutex    sync.Mutex
+	bindings map[string]fyne.CanvasObject
 }
 
 type CharacterModel struct {
@@ -69,10 +61,8 @@ func NewCharacterController(f rules.Folderstructure, windowtitel string) (*Chara
 	var err error
 	ctrl.Model, err = NewCharacterModel(f)
 	if err != nil {
-		return nil, err
+		return &ctrl, err
 	}
-
-	ctrl.CharacterList = ctrl.CreateCharacterList()
 
 	return &ctrl, nil
 }

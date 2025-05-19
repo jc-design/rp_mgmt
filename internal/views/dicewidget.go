@@ -40,19 +40,22 @@ func NewDiceItem(ctrl *CharacterController, e *models.Element) *DiceItem {
 
 	di.rolldice = func() {
 		di.data.Execute()
-		di.entry.SetText(di.data.Value.GetInfo(value))
+		di.entry.SetText(di.data.Value.GetInfo(models.Value))
 		di.controller.Model.ApplyCreationRules()
+		di.controller.refreshbindings(di.data.Fieldtype.Identify())
 		di.Refresh()
 	}
 
 	di.savevalue = func(s string) {
 		di.data.SetValue(s)
 		di.controller.Model.ApplyCreationRules()
+		di.controller.refreshbindings(di.data.Fieldtype.Identify())
 		di.Refresh()
 	}
 
 	di.ExtendBaseWidget(di)
 
+	ctrl.addbindings(e.Fieldtype.Identify(), di)
 	return di
 }
 
@@ -76,7 +79,7 @@ func (di *DiceItem) CreateRenderer() fyne.WidgetRenderer {
 		Icon:     resourceDicedarkSvg,
 		OnTapped: di.rolldice,
 	}
-	di.descriptionLbl = canvas.NewText(di.data.Value.GetInfo(description), th.Color(theme.ColorNameForeground, v))
+	di.descriptionLbl = canvas.NewText(di.data.Value.GetInfo(models.Description), th.Color(theme.ColorNameForeground, v))
 
 	t := canvas.NewText(di.data.ErrorMsg, th.Color(theme.ColorNameError, v))
 	t.TextSize = t.TextSize * 0.8
@@ -105,8 +108,8 @@ func (di *DiceItem) CreateRenderer() fyne.WidgetRenderer {
 func (di *DiceItem) Refresh() {
 	di.ExtendBaseWidget(di)
 
-	di.entry.Text = di.data.Value.GetInfo(value)
-	di.descriptionLbl.Text = di.data.Value.GetInfo(description)
+	di.entry.Text = di.data.Value.GetInfo(models.Value)
+	di.descriptionLbl.Text = di.data.Value.GetInfo(models.Description)
 	di.errorLbl.Text = di.data.ErrorMsg
 	if di.data.ErrorMsg == "" {
 		di.errorLbl.Hide()
@@ -114,7 +117,7 @@ func (di *DiceItem) Refresh() {
 		di.errorLbl.Show()
 	}
 	di.layoutcont.Refresh()
-	canvas.Refresh(di)
+	// canvas.Refresh(di)
 }
 
 func (di *DiceItem) MinSize() fyne.Size {

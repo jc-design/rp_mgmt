@@ -36,11 +36,13 @@ func NewIntvalueItem(ctrl *CharacterController, e *models.Element) *IntvalueItem
 	iv.savevalue = func(s string) {
 		iv.data.SetValue(s)
 		iv.controller.Model.ApplyCreationRules()
+		iv.controller.refreshbindings(iv.data.Fieldtype.Identify())
 		iv.Refresh()
 	}
 
 	iv.ExtendBaseWidget(iv)
 
+	ctrl.addbindings(e.Fieldtype.Identify(), iv)
 	return iv
 }
 
@@ -85,7 +87,7 @@ func (iv *IntvalueItem) CreateRenderer() fyne.WidgetRenderer {
 func (iv *IntvalueItem) Refresh() {
 	iv.ExtendBaseWidget(iv)
 
-	iv.entry.Text = iv.data.Value.GetInfo(value)
+	iv.entry.Text = iv.data.Value.GetInfo(models.Value)
 	iv.errorLbl.Text = iv.data.ErrorMsg
 	if iv.data.ErrorMsg == "" {
 		iv.errorLbl.Hide()
@@ -93,7 +95,7 @@ func (iv *IntvalueItem) Refresh() {
 		iv.errorLbl.Show()
 	}
 	iv.layoutcont.Refresh()
-	canvas.Refresh(iv)
+	// canvas.Refresh(iv)
 }
 
 func (iv *IntvalueItem) MinSize() fyne.Size {

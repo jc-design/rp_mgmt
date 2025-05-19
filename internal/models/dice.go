@@ -44,7 +44,7 @@ func (d *Dice) SetValue(input ...any) {
 
 func (d *Dice) GetInfo(key string) string {
 	switch strings.ToLower(key) {
-	case description:
+	case Description:
 		switch {
 		case d.DiceMarkup == 0:
 			return fmt.Sprintf("%d%s%d", d.DiceCount, d.Abr, d.DiceValue)
@@ -55,9 +55,9 @@ func (d *Dice) GetInfo(key string) string {
 		default:
 			return ""
 		}
-	case identify:
+	case Identify:
 		return fmt.Sprintf("%d%d%d", d.DiceValue, d.DiceCount, d.DiceMarkup)
-	case value:
+	case Value:
 		return fmt.Sprintf("%d", d.Value)
 	default:
 		return ""
