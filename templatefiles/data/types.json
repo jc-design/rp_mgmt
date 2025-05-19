@@ -1,0 +1,241 @@
+[
+  {
+    "type": "race",
+    "id": "hu",
+    "label": "Mensch",
+    "description": "Mensch"
+  },
+  {
+    "type": "race",
+    "id": "el",
+    "label": "Elf",
+    "description": "Elf"
+  },
+  {
+    "type": "race",
+    "id": "gn",
+    "label": "Gnome",
+    "description": "Gnome"
+  },
+  {
+    "type": "race",
+    "id": "hb",
+    "label": "Halbling",
+    "description": "Halbling"
+  },
+  {
+    "type": "race",
+    "id": "zw",
+    "label": "Zwerg",
+    "description": "Zwerg"
+  },
+  {
+    "type": "stand",
+    "id": "un",
+    "label": "Unfrei",
+    "description": "Unfrei"
+  },
+  {
+    "type": "stand",
+    "id": "vo",
+    "label": "Volk",
+    "description": "Volk"
+  },
+  {
+    "type": "stand",
+    "id": "mi",
+    "label": "Mittelschicht",
+    "description": "Mittelschicht"
+  },
+  {
+    "type": "stand",
+    "id": "ad",
+    "label": "Adel",
+    "description": "Adel"
+  },
+  {
+    "type": "shape",
+    "id": "xs",
+    "label": "Schlank",
+    "description": "Schlank"
+  },
+  {
+    "type": "shape",
+    "id": "av",
+    "label": "Normal",
+    "description": "Normal"
+  },
+  {
+    "type": "shape",
+    "id": "xl",
+    "label": "Breit",
+    "description": "Breit"
+  },
+  {
+    "type": "gender",
+    "id": "ma",
+    "label": "Mann",
+    "description": "Mann"
+  },
+  {
+    "type": "gender",
+    "id": "fe",
+    "label": "Frau",
+    "description": "Frau"
+  },
+  {
+    "type": "classtype",
+    "id": "fi",
+    "label": "Kämpfer",
+    "description": "Kämpfer"
+  },
+  {
+    "type": "classtype",
+    "id": "mu",
+    "label": "Kämpfer - Zauberer",
+    "description": "Kämpfer - Zauberer"
+  },
+  {
+    "type": "classtype",
+    "id": "ma",
+    "label": "Zauberer",
+    "description": "Zauberer"
+  },
+  {
+    "type": "class",
+    "id": "as",
+    "label": "Assassine",
+    "description": "Assassine"
+  },
+  {
+    "type": "class",
+    "id": "bb",
+    "label": "Barbar",
+    "description": "Barbar"
+  },
+  {
+    "type": "class",
+    "id": "gl",
+    "label": "Glücksritter",
+    "description": "Glücksritter"
+  },
+  {
+    "type": "class",
+    "id": "hae",
+    "label": "Händler",
+    "description": "Händler"
+  },
+  {
+    "type": "class",
+    "id": "kr",
+    "label": "Krieger",
+    "description": "Krieger"
+  },
+  {
+    "type": "class",
+    "id": "sp",
+    "label": "Spitzbube",
+    "description": "Spitzbube"
+  },
+  {
+    "type": "class",
+    "id": "wa",
+    "label": "Waldläufer",
+    "description": "Waldläufer"
+  },
+  {
+    "type": "class",
+    "id": "ba",
+    "label": "Barde",
+    "description": "Barde"
+  },
+  {
+    "type": "class",
+    "id": "er",
+    "label": "Ermittler",
+    "description": "Ermittler"
+  },
+  {
+    "type": "class",
+    "id": "mg",
+    "label": "Magister",
+    "description": "Magister"
+  },
+  {
+    "type": "class",
+    "id": "or",
+    "label": "Ordenskrieger",
+    "description": "Ordenskrieger"
+  },
+  {
+    "type": "class",
+    "id": "sg",
+    "label": "Schattengänger",
+    "description": "Schattengänger"
+  },
+  {
+    "type": "class",
+    "id": "tm",
+    "label": "Tiermeister",
+    "description": "Tiermeister"
+  },
+  {
+    "type": "class",
+    "id": "dr",
+    "label": "Druide",
+    "description": "Druide"
+  },
+  {
+    "type": "class",
+    "id": "hl",
+    "label": "Heiler",
+    "description": "Heiler"
+  },
+  {
+    "type": "class",
+    "id": "hx",
+    "label": "Hexer",
+    "description": "Hexer"
+  },
+  {
+    "type": "class",
+    "id": "ma",
+    "label": "Magier",
+    "description": "Magier"
+  },
+  {
+    "type": "class",
+    "id": "pb",
+    "label": "Priester, Beschützer"
+  },
+  {
+    "type": "class",
+    "id": "ps",
+    "label": "Priester, Streiter",
+    "description": "Priester, Streiter"
+  },
+  {
+    "type": "class",
+    "id": "rm",
+    "label": "Runenmeister",
+    "description": "Runenmeister"
+  },
+  {
+    "type": "class",
+    "id": "sc",
+    "label": "Schamane",
+    "description": "Schamane"
+  },
+  {
+    "type": "class",
+    "id": "th",
+    "label": "Thaumaturg",
+    "description": "Thaumaturg"
+  },
+  {
+    "type": "class",
+    "id": "ws",
+    "label": "Weiser",
+    "description": "Weiser"
+  }
+]
