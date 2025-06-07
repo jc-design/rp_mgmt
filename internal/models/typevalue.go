@@ -6,48 +6,65 @@ import (
 	"strings"
 )
 
+var _ ValueElementer = (*Typevalue)(nil)
+var _ Cloner[*Typevalue] = (*Typevalue)(nil)
+
 type Typevalue struct {
 	Fieldvalue  Fieldtype    `json:"fieldvalue"`
 	Validvalues []*Fieldtype `json:"-"`
 }
 
-func (i *Typevalue) SetValue(input ...any) {
+// ValueSetter interface
+func (i *Typevalue) SetValue(input ...any) error {
 	for _, val := range input {
 		switch ass := val.(type) {
 		case string:
 			for _, v := range i.Validvalues {
 				if ass == v.Label {
 					i.Fieldvalue = *v
-					return
+					return nil
 				}
 			}
 		case *Fieldtype:
 			i.Fieldvalue = *ass
+			return nil
 		case []*Fieldtype:
 			i.Validvalues = ass
+			return nil
 		default:
-			fmt.Printf("could not work with input of type %T", ass)
+			return fmt.Errorf("invalid type %T for SetValue @Typevalue. Value of input: %s", ass, ass)
 		}
 	}
+	return fmt.Errorf("unkown error for SetValue @Typevalue")
 }
 
-func (t *Typevalue) GetInfo(key string) string {
+// Informer interface
+func (t *Typevalue) GetInfo(key string) (string, error) {
 	switch strings.ToLower(key) {
 	case Description:
-		return t.Fieldvalue.Description
+		return t.Fieldvalue.Description, nil
 	case Id:
-		return t.Fieldvalue.Id
+		return t.Fieldvalue.Id, nil
 	case Identify:
-		return t.Fieldvalue.Identify()
+		return t.Fieldvalue.Identify(), nil
 	case Value:
-		return t.Fieldvalue.Label
+		return t.Fieldvalue.Label, nil
 	default:
-		return ""
+		return "", fmt.Errorf("wrong key (%s) for GetInfo @Typevalue", key)
 	}
 }
 
+// Executor interface
 func (t *Typevalue) Execute() (any, error) {
 	return nil, nil
+}
+
+// Cloner interface
+func (t *Typevalue) Clone() *Typevalue {
+	return &Typevalue{
+		Fieldvalue:  t.Fieldvalue,
+		Validvalues: t.Validvalues,
+	}
 }
 
 func (t *Typevalue) MarshalJSON() ([]byte, error) {

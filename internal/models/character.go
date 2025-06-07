@@ -1,33 +1,42 @@
 package models
 
 import (
-	"strings"
-
 	"slices"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jc-design/rp_mgmt/internal/rules"
 )
 
+type elementgroup struct {
+	Group    Fieldtype
+	Elements []*Element
+}
+
 type Character struct {
-	Id            string         `json:"id"`
-	Name          string         `json:"name"`
-	Image         string         `json:"image"`
-	Level         int            `json:"level"`
-	Exp           int            `json:"exp"`
-	RuleSet       rules.Ruleset  `json:"ruleset"`
-	Properties    []*Element     `json:"properties"`
-	Status        Activationmode `json:"-"`
-	Deleted       bool           `json:"-"`
-	Allfieldtypes []*Fieldtype   `json:"-"`
+	Id            string              `json:"id"`
+	Name          string              `json:"name"`
+	Image         string              `json:"image"`
+	Level         int                 `json:"level"`
+	Exp           int                 `json:"exp"`
+	RuleSet       rules.Ruleset       `json:"ruleset"`
+	Properties    []*Element          `json:"properties"`
+	Status        Activationmode      `json:"-"`
+	Allfieldtypes []*Fieldtype        `json:"-"`
+	PropsGrouped  []*elementgroup     `jsonn:"-"`
+	Log           func(string, error) `json:"-"`
 }
 
 // Create a new Character
-func NewCharacter(r rules.Ruleset, prop []*Element, types []*Fieldtype) *Character {
+func NewCharacter(r rules.Ruleset, prop []*Element, types []*Fieldtype, log func(string, error)) *Character {
 
 	c := Character{}
 	copyElements := make([]*Element, len(prop))
-	copy(copyElements, prop)
+	for i, ref := range prop {
+		e := ref.Clone()
+		copyElements[i] = e
+	}
+	// copy(copyElements, prop)
 
 	c.Id = uuid.New().String()
 	c.Name = "New Character"
@@ -38,7 +47,9 @@ func NewCharacter(r rules.Ruleset, prop []*Element, types []*Fieldtype) *Charact
 	c.Properties = copyElements
 	c.Status = Activationmode(Creation)
 	c.Allfieldtypes = types
+	c.Log = log
 
+	c.ClassifyProperties()
 	return &c
 }
 
@@ -63,7 +74,7 @@ func (c *Character) IsElementDirty(ident string) bool {
 		return false
 	}
 
-	return e.isDirty
+	return !(!e.isDirty && e.isValidated)
 }
 
 func (c *Character) GetValueInfo(ident, key string) string {
@@ -71,8 +82,7 @@ func (c *Character) GetValueInfo(ident, key string) string {
 	if e == nil {
 		return ""
 	}
-
-	return e.Value.GetInfo(key)
+	return e.GetValueInfo(key)
 }
 
 func (c *Character) GetValueAsInt(ident string) int {
@@ -81,13 +91,7 @@ func (c *Character) GetValueAsInt(ident string) int {
 		return 0
 	}
 
-	switch ass := e.Value.(type) {
-	case *Intvalue:
-		return ass.Intvalue
-	case *Dice:
-		return ass.Value
-	}
-	return 0
+	return e.GetValueAsInt()
 }
 
 func (c *Character) IsValueInRange(ident string, min, max int64) bool {
@@ -96,16 +100,11 @@ func (c *Character) IsValueInRange(ident string, min, max int64) bool {
 		return false
 	}
 
-	switch ass := e.Value.(type) {
-	case *Intvalue:
-		if ass.Intvalue >= int(min) && ass.Intvalue <= int(max) {
-			return true
-		}
-	case *Dice:
-		if ass.Value >= int(min) && ass.Value <= int(max) {
-			return true
-		}
+	i := e.GetValueAsInt()
+	if i >= int(min) && i <= int(max) {
+		return true
 	}
+
 	return false
 }
 
@@ -114,12 +113,24 @@ func (c *Character) IsValueInList(ident string, list string) bool {
 	if e == nil {
 		return false
 	}
+
 	l := strings.Split(list, ";")
-	if slices.Contains(l, e.Value.GetInfo(Id)) || slices.Contains(l, e.Value.GetInfo(Value)) {
+	i := e.GetValueInfo(Id)
+	v := e.GetValueInfo(Value)
+	if slices.Contains(l, i) || slices.Contains(l, v) {
 		return true
 	}
 
 	return false
+}
+
+func (c *Character) SetValueInt(ident string, value float64) {
+	e := c.GetElement(ident)
+	if e == nil {
+		return
+	}
+	e.SetValue(int(value))
+
 }
 
 func (c *Character) SetValueFromList(ident, fieldtype, list string) {
@@ -148,7 +159,9 @@ func (c *Character) SetValueFromList(ident, fieldtype, list string) {
 		ass.Validvalues = types
 
 		for _, field := range types {
-			if field.Id == ass.GetInfo(Id) {
+
+			i := e.GetValueInfo(Id)
+			if field.Id == i {
 				return
 			}
 		}
@@ -165,4 +178,40 @@ func (c *Character) SetDiceProperties(ident string, dicevalue, dicecount int64, 
 
 	arr := []int{int(dicevalue), int(dicecount), int(dicemarkup)}
 	e.SetValue(arr)
+}
+
+func (c *Character) IsAllValid() bool {
+	for _, e := range c.Properties {
+		if !e.isValidated {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Character) ClassifyProperties() {
+	c.PropsGrouped = []*elementgroup{}
+	if c.Properties != nil {
+		// first get all fieldtypes with type == "property"
+		// populate map and create empty slices
+		for i := range c.Allfieldtypes {
+			if c.Allfieldtypes[i].Type == "property" {
+				g := &elementgroup{
+					Group:    *c.Allfieldtypes[i],
+					Elements: []*Element{},
+				}
+				c.PropsGrouped = append(c.PropsGrouped, g)
+			}
+		}
+
+		// loop through characterproperties and add elements to map
+		for _, p := range c.Properties {
+			for _, g := range c.PropsGrouped {
+				if g.Group.Id == p.Fieldtype.Type {
+					g.Elements = append(g.Elements, p)
+				}
+			}
+		}
+
+	}
 }

@@ -16,7 +16,9 @@ type NumericEntry struct {
 
 func NewNumericEntry() *NumericEntry {
 	entry := &NumericEntry{}
+
 	entry.ExtendBaseWidget(entry)
+
 	return entry
 }
 

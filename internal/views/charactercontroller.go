@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -20,46 +22,73 @@ type CharacterController struct {
 	App    fyne.App
 	Window fyne.Window
 
-	mutex    sync.Mutex
-	bindings map[string]fyne.CanvasObject
+	Elechan chan *models.Character
+
+	// TODO:
+	// check if mutex and bindings are still necessary
+	Log func(string, error) `json:"-"`
 }
 
 type CharacterModel struct {
 	allTypes            []*models.Fieldtype
 	allElements         []*models.Element
 	ruleset             rules.Ruleset
-	Characters          []*models.Character
-	SelectedCharacter   *models.Character
+	folderstr           *rules.Folderstructure
 	creationRuleservice rules.RulesApplier
+
+	Characters        []*models.Character
+	SelectedCharacter *models.Character
+	Log               func(string, error) `json:"-"`
 }
 
 // func needed for RuleFact interface
 // it's needed for the grule-engine validation
+// not used for the moment
 func (c *CharacterModel) FactKey() string {
 	return "Model"
 }
 
 // func needed for RuleFact interface
 // it's needed for the grule-engine validation
+// not used for the moment
 func (c *CharacterController) FactKey() string {
 	return "Controller"
 }
 
-func NewCharacterController(f rules.Folderstructure, windowtitel string) (*CharacterController, error) {
+func NewCharacterController(f *rules.Folderstructure, log func(string, error), windowtitel string) (*CharacterController, error) {
 	ctrl := CharacterController{}
 
+	// TODO
+	// resized window, check minsize func
 	ctrl.App = app.New()
 	ctrl.Window = ctrl.App.NewWindow(windowtitel)
 	ctrl.Window.Resize(fyne.NewSize(640, 480))
 	ctrl.Window.CenterOnScreen()
 
+	// TODO
+	// create own custom theme
 	ctrl.App.Settings().SetTheme(theme.LightTheme())
 
-	ctrl.mutex = sync.Mutex{}
-	ctrl.bindings = make(map[string]fyne.CanvasObject)
+	ctrl.Elechan = make(chan *models.Character)
+	go func() {
+		for {
+			select {
+			case c := <-ctrl.Elechan:
+				ctrl.Model.creationRuleservice.ApplyRules(c)
+				fyne.Do(func() {
+					// refresh complete window content
+					// check if savebutton is activated as well
+					ctrl.Window.Content().Refresh()
+				})
+			}
+		}
+	}()
 
+	ctrl.Log = log
+
+	// error will be logged in main.go
 	var err error
-	ctrl.Model, err = NewCharacterModel(f)
+	ctrl.Model, err = NewCharacterModel(f, log)
 	if err != nil {
 		return &ctrl, err
 	}
@@ -67,7 +96,7 @@ func NewCharacterController(f rules.Folderstructure, windowtitel string) (*Chara
 	return &ctrl, nil
 }
 
-func NewCharacterModel(f rules.Folderstructure) (*CharacterModel, error) {
+func NewCharacterModel(f *rules.Folderstructure, log func(string, error)) (*CharacterModel, error) {
 	var err error
 	cm := CharacterModel{}
 
@@ -78,6 +107,9 @@ func NewCharacterModel(f rules.Folderstructure) (*CharacterModel, error) {
 		return nil, err
 	}
 
+	cm.folderstr = f
+	cm.Log = log
+
 	//prepare waitgroup and channel for following go-routines
 	wg := &sync.WaitGroup{}
 	respch := make(chan error, 3)
@@ -87,39 +119,39 @@ func NewCharacterModel(f rules.Folderstructure) (*CharacterModel, error) {
 
 	//spin up go-routine
 	//load type definitions
-	go func(cm *CharacterModel, f rules.Folderstructure, respch chan error, wg *sync.WaitGroup) {
+	go func(cm *CharacterModel, respch chan error, wg *sync.WaitGroup) {
 		defer wg.Done()
-		err := cm.LoadTypes(f)
+		err := cm.LoadTypes()
 		if err != nil {
 			respch <- err
 			return
 		}
 		respch <- nil
-	}(&cm, f, respch, wg)
+	}(&cm, respch, wg)
 
 	//spin up go-routine
 	//load element definitions
-	go func(cm *CharacterModel, f rules.Folderstructure, respch chan error, wg *sync.WaitGroup) {
+	go func(cm *CharacterModel, respch chan error, wg *sync.WaitGroup) {
 		defer wg.Done()
-		err := cm.LoadElements(f)
+		err := cm.LoadElements()
 		if err != nil {
 			respch <- err
 			return
 		}
 		respch <- nil
-	}(&cm, f, respch, wg)
+	}(&cm, respch, wg)
 
 	//spin up go-routine
 	//create ruleservice with creation rules
-	go func(cm *CharacterModel, f rules.Folderstructure, respch chan error, wg *sync.WaitGroup) {
+	go func(cm *CharacterModel, respch chan error, wg *sync.WaitGroup) {
 		defer wg.Done()
-		cm.creationRuleservice, err = cm.newRuleservice(f, "createcharacter.grl", "creation", "version")
+		cm.creationRuleservice, err = cm.newRuleservice("createcharacter", "creation", "version")
 		if err != nil {
 			respch <- err
 			return
 		}
 		respch <- nil
-	}(&cm, f, respch, wg)
+	}(&cm, respch, wg)
 
 	wg.Wait()
 	close(respch)
@@ -135,9 +167,11 @@ func NewCharacterModel(f rules.Folderstructure) (*CharacterModel, error) {
 		return nil, errors.Join(errs...)
 	}
 
-	err = cm.LoadCharacters(f)
+	err = cm.LoadCharacters()
 	if err != nil {
-		fmt.Printf("error while loaded characters.json: %v\n", err)
+		if !errors.Is(err, os.ErrNotExist) {
+			cm.Log("error loading characters", err)
+		}
 	}
 
 	if len(cm.Characters) > 0 {
@@ -146,47 +180,53 @@ func NewCharacterModel(f rules.Folderstructure) (*CharacterModel, error) {
 	return &cm, nil
 }
 
-func (cm *CharacterModel) LoadTypes(f rules.Folderstructure) error {
+func (cm *CharacterModel) LoadTypes() error {
 
-	data, err := os.ReadFile(filepath.Join(f.Data, "types.json"))
+	data, err := os.ReadFile(filepath.Join(cm.folderstr.Data, "types.json"))
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading types:  %w", err)
 	}
 
 	err = json.Unmarshal(data, &cm.allTypes)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshaling types:  %w", err)
 	}
 
 	return nil
 }
 
-func (cm *CharacterModel) LoadElements(f rules.Folderstructure) error {
-	data, err := os.ReadFile(filepath.Join(f.Data, "characterproperties.json"))
+func (cm *CharacterModel) LoadElements() error {
+	data, err := os.ReadFile(filepath.Join(cm.folderstr.Data, "characterproperties.json"))
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading elements:  %w", err)
 	}
 
 	err = json.Unmarshal(data, &cm.allElements)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshaling elements:  %w", err)
+	}
+
+	// pass log func to Element, so errors could be logged where they occur
+	for _, e := range cm.allElements {
+		e.Log = cm.Log
 	}
 
 	return nil
 }
 
-func (cm *CharacterModel) LoadCharacters(f rules.Folderstructure) error {
+func (cm *CharacterModel) LoadCharacters() error {
 
-	data, err := os.ReadFile(filepath.Join(f.Characters, "characters.json"))
+	data, err := os.ReadFile(filepath.Join(cm.folderstr.Characters, "characters.json"))
 	if err != nil {
-		return err
+		return fmt.Errorf("error loading characters:  %w", err)
 	}
 
 	err = json.Unmarshal(data, &cm.Characters)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshaling characters:  %w", err)
 	}
 
+	// check if character ruleset is equal to defined ruleset
 	for _, c := range cm.Characters {
 		if c.RuleSet != cm.ruleset {
 			return fmt.Errorf("error loading characters due to incomapatible ruleset. "+
@@ -194,78 +234,87 @@ func (cm *CharacterModel) LoadCharacters(f rules.Folderstructure) error {
 		}
 		c.Allfieldtypes = cm.allTypes
 		c.Status = models.Activationmode(models.Levelup)
+		c.ClassifyProperties()
+
+		// pass log func to Element, so errors could be logged where they occur
+		for _, e := range c.Properties {
+			e.Log = cm.Log
+		}
 	}
 	return nil
 }
 
-func (cm *CharacterModel) SaveCharacters(f rules.Folderstructure) error {
+func (cm *CharacterModel) SaveCharacters() error {
 
-	// Create slice with length of 0 from the given slice
-	tmp := cm.Characters[:0]
-	for _, c := range cm.Characters {
-		// if character is not marked as [Deleted], then copy it to slice
-		for _, e := range c.Properties {
-			if !e.GetValidation() {
-				continue
-			}
-		}
-		if !c.Deleted {
-			tmp = append(tmp, c)
-		}
-	}
-
-	bytes, err := json.MarshalIndent(tmp, "", " ")
+	bytes, err := json.MarshalIndent(cm.Characters, "", " ")
 	if err != nil {
-		return err
+		return fmt.Errorf("error marshaling charatcers:  %w", err)
+
 	}
 
-	if err := os.WriteFile(filepath.Join(f.Characters, "characters.json"), bytes, 0644); err != nil {
-		return err
+	if err := os.WriteFile(filepath.Join(cm.folderstr.Characters, "characters.json"), bytes, 0644); err != nil {
+		return fmt.Errorf("error saving characters:  %w", err)
 	}
 
 	return nil
 }
 
 func (cm *CharacterModel) NewCharacter() {
-	c := models.NewCharacter(cm.ruleset, cm.allElements, cm.allTypes)
+	c := models.NewCharacter(cm.ruleset, cm.allElements, cm.allTypes, cm.Log)
 	cm.Characters = append(cm.Characters, c)
 
 	cm.SelectedCharacter = c
 	for _, e := range c.Properties {
 		e.RulesReset()
 	}
+
+	// TODO
+	// Access CharacterController
 	cm.ApplyCreationRules()
+}
+
+func (cm *CharacterModel) RemoveCharacter(index int) error {
+	if index < 0 || index > len(cm.Characters) {
+		return fmt.Errorf("index is invalid")
+	}
+	cm.Characters = slices.Delete(cm.Characters, index, index+1)
+	return nil
 }
 
 func (cm *CharacterModel) ApplyCreationRules() {
 	cm.creationRuleservice.ApplyRules(cm.SelectedCharacter)
 }
 
-func (ctrl *CharacterController) addbindings(key string, obj fyne.CanvasObject) {
-	ctrl.mutex.Lock()
+func (cm *CharacterModel) newRuleservice(rulefn, name, version string) (rules.RulesApplier, error) {
 
-	ctrl.bindings[key] = obj
-
-	ctrl.mutex.Unlock()
-}
-
-func (ctrl *CharacterController) refreshbindings(key string) {
-	ctrl.mutex.Lock()
-
-	for k, v := range ctrl.bindings {
-		if k != key && v != nil {
-			v.Refresh()
-		}
-	}
-
-	ctrl.mutex.Unlock()
-}
-
-func (cm *CharacterModel) newRuleservice(f rules.Folderstructure, rulefn, name, version string) (rules.RulesApplier, error) {
-	data, err := os.ReadFile(filepath.Join(f.Rules, rulefn))
+	entries, err := os.ReadDir(cm.folderstr.Rules)
 	if err != nil {
 		return nil, err
 	}
+
+	data := make([]byte, 0)
+	for _, v := range entries {
+		if v.IsDir() {
+			continue
+		}
+		if filepath.Ext(v.Name()) != ".grl" {
+			continue
+		}
+		if !strings.HasPrefix(v.Name(), rulefn) {
+			continue
+		}
+
+		file_data, err := os.ReadFile(filepath.Join(cm.folderstr.Rules, v.Name())) // For read access.
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, file_data...)
+	}
+
+	// data, err := os.ReadFile(filepath.Join(cm.folderstr.Rules, rulefn))
+	// if err != nil {
+	// 	return nil, err
+	// }
 	client, err := rules.NewInputOnlyRuleService(data, name, version)
 	if err != nil {
 		return nil, err

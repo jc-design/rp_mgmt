@@ -5,30 +5,45 @@ import (
 	"strings"
 )
 
+var _ ValueElementer = (*Stringvalue)(nil)
+var _ Cloner[*Stringvalue] = (*Stringvalue)(nil)
+
 type Stringvalue struct {
 	Stringvalue string `json:"stringvalue"`
 }
 
-func (s *Stringvalue) SetValue(input ...any) {
+// ValueSetter interface
+func (s *Stringvalue) SetValue(input ...any) error {
 	for _, val := range input {
 		switch ass := val.(type) {
 		case string:
 			s.Stringvalue = ass
+			return nil
 		default:
-			fmt.Printf("could not work with input of type %T", ass)
+			return fmt.Errorf("invalid type %T for SetValue @Stringvalue. Value of input: %s", ass, ass)
 		}
 	}
+	return fmt.Errorf("unkown error for SetValue @Stringvalue")
 }
 
-func (s *Stringvalue) GetInfo(key string) string {
+// Informer interface
+func (s *Stringvalue) GetInfo(key string) (string, error) {
 	switch strings.ToLower(key) {
 	case Value:
-		return s.Stringvalue
+		return s.Stringvalue, nil
 	default:
-		return ""
+		return "", fmt.Errorf("wrong key (%s) for GetInfo @Typevalue", key)
 	}
 }
 
+// Executor interface
 func (s Stringvalue) Execute() (any, error) {
 	return nil, nil
+}
+
+// Cloner interface
+func (s *Stringvalue) Clone() *Stringvalue {
+	return &Stringvalue{
+		Stringvalue: s.Stringvalue,
+	}
 }

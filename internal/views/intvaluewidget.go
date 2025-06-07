@@ -16,38 +16,27 @@ var _ fyne.Widget = (*IntvalueItem)(nil)
 type IntvalueItem struct {
 	widget.BaseWidget
 
-	splitelem  fyne.CanvasObject
 	layoutcont *fyne.Container
-	label      *canvas.Text
-	entry      *NumericEntry
-	errorLbl   *canvas.Text
 
-	controller *CharacterController
-	data       *models.Element
+	splitelem fyne.CanvasObject
+	label     *canvas.Text
+	entry     *NumericEntry
+	errorLbl  *canvas.Text
+
+	elechan   chan *models.Character
+	charmodel *CharacterModel
+	ident     string
+
+	data *models.Element
 
 	savevalue func(string)
 }
 
-func NewIntvalueItem(ctrl *CharacterController, e *models.Element) *IntvalueItem {
+func NewIntvalueItem(chn chan *models.Character, model *CharacterModel, ident string) *IntvalueItem {
 	iv := &IntvalueItem{}
-	iv.controller = ctrl
-	iv.data = e
-
-	iv.savevalue = func(s string) {
-		iv.data.SetValue(s)
-		iv.controller.Model.ApplyCreationRules()
-		iv.controller.refreshbindings(iv.data.Fieldtype.Identify())
-		iv.Refresh()
-	}
-
-	iv.ExtendBaseWidget(iv)
-
-	ctrl.addbindings(e.Fieldtype.Identify(), iv)
-	return iv
-}
-
-func (iv *IntvalueItem) CreateRenderer() fyne.WidgetRenderer {
-	iv.ExtendBaseWidget(iv)
+	iv.elechan = chn
+	iv.charmodel = model
+	iv.ident = ident
 
 	th := iv.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
@@ -58,13 +47,25 @@ func (iv *IntvalueItem) CreateRenderer() fyne.WidgetRenderer {
 		StrokeColor: color.NRGBA{R: primecol.R, G: primecol.G, B: primecol.B, A: 31},
 		StrokeWidth: 2,
 	}
-	iv.label = canvas.NewText(iv.data.Fieldtype.Label, th.Color(theme.ColorNameForeground, v))
+	iv.label = canvas.NewText("", th.Color(theme.ColorNameForeground, v))
 	iv.entry = NewNumericEntry()
-	iv.entry.OnChanged = iv.savevalue
+	iv.entry.OnChanged = func(s string) {
+		if iv.data != nil {
+			iv.data.SetValue(s)
+			iv.elechan <- iv.charmodel.SelectedCharacter
+		}
+	}
 
-	t := canvas.NewText(iv.data.ErrorMsg, th.Color(theme.ColorNameError, v))
+	t := canvas.NewText("", th.Color(theme.ColorNameError, v))
 	t.TextSize = t.TextSize * 0.8
 	iv.errorLbl = t
+
+	iv.ExtendBaseWidget(iv)
+	return iv
+}
+
+func (iv *IntvalueItem) CreateRenderer() fyne.WidgetRenderer {
+	iv.ExtendBaseWidget(iv)
 
 	iv.layoutcont = container.New(
 		&valuelayout{
@@ -87,17 +88,23 @@ func (iv *IntvalueItem) CreateRenderer() fyne.WidgetRenderer {
 func (iv *IntvalueItem) Refresh() {
 	iv.ExtendBaseWidget(iv)
 
-	iv.entry.Text = iv.data.Value.GetInfo(models.Value)
-	iv.errorLbl.Text = iv.data.ErrorMsg
-	if iv.data.ErrorMsg == "" {
-		iv.errorLbl.Hide()
-	} else {
-		iv.errorLbl.Show()
+	if iv.charmodel.SelectedCharacter != nil {
+		iv.data = iv.charmodel.SelectedCharacter.GetElement(iv.ident)
+		iv.data.OnValidated = func(b bool) {
+			fyne.Do(func() {
+				iv.Refresh()
+			})
+		}
+		iv.label.Text = iv.data.Fieldtype.Label
+		iv.entry.Text = iv.data.GetValueInfo(models.Value)
+		if iv.data.GetValidation() {
+			iv.errorLbl.Hide()
+		} else {
+			iv.errorLbl.Show()
+		}
+		iv.errorLbl.Text = iv.data.ErrorMsg
 	}
-	iv.layoutcont.Refresh()
-	// canvas.Refresh(iv)
-}
 
-func (iv *IntvalueItem) MinSize() fyne.Size {
-	return iv.BaseWidget.MinSize()
+	// call Refresh() on layout, so alle CanvasObjects are correctly redrawn
+	iv.layoutcont.Refresh()
 }

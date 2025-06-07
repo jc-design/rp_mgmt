@@ -85,5 +85,6 @@ func TestElementExecuteDiceFunction(t *testing.T) {
 	assert.NoError(t, err)
 
 	e.Execute()
-	assert.NotEqual(t, "0", e.Value.GetInfo("value"))
+	v1, _ := e.Value.GetInfo(models.Value)
+	assert.NotEqual(t, "0", v1)
 }

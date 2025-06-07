@@ -16,39 +16,26 @@ var _ fyne.Widget = (*TypevalueItem)(nil)
 type TypevalueItem struct {
 	widget.BaseWidget
 
-	splitelem  fyne.CanvasObject
 	layoutcont *fyne.Container
-	label      *canvas.Text
-	selectwg   *widget.Select
-	errorLbl   *canvas.Text
 
-	controller *CharacterController
-	data       *models.Element
+	splitelem fyne.CanvasObject
+	label     *canvas.Text
+	selectwg  *widget.Select
+	errorLbl  *canvas.Text
 
-	savevalue func(string)
+	elechan   chan *models.Character
+	charmodel *CharacterModel
+	ident     string
+
+	data *models.Element
 }
 
-func NewTypevalueItem(ctrl *CharacterController, e *models.Element) *TypevalueItem {
+func NewTypevalueItem(chn chan *models.Character, model *CharacterModel, ident string) *TypevalueItem {
 	tv := &TypevalueItem{}
 
-	tv.controller = ctrl
-	tv.data = e
-
-	tv.savevalue = func(s string) {
-		tv.data.SetValue(s)
-		tv.controller.Model.ApplyCreationRules()
-		tv.controller.refreshbindings(tv.data.Fieldtype.Identify())
-		tv.Refresh()
-	}
-
-	tv.ExtendBaseWidget(tv)
-
-	ctrl.addbindings(e.Fieldtype.Identify(), tv)
-	return tv
-}
-
-func (tv *TypevalueItem) CreateRenderer() fyne.WidgetRenderer {
-	tv.ExtendBaseWidget(tv)
+	tv.elechan = chn
+	tv.charmodel = model
+	tv.ident = ident
 
 	th := tv.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
@@ -60,12 +47,24 @@ func (tv *TypevalueItem) CreateRenderer() fyne.WidgetRenderer {
 		StrokeWidth: 2,
 	}
 
-	tv.label = canvas.NewText(tv.data.Fieldtype.Label, th.Color(theme.ColorNameForeground, v))
-	tv.selectwg = widget.NewSelect(nil, tv.savevalue)
+	tv.label = canvas.NewText("", th.Color(theme.ColorNameForeground, v))
+	tv.selectwg = widget.NewSelect(nil, func(s string) {
+		if tv.data != nil {
+			tv.data.SetValue(s)
+			tv.elechan <- tv.charmodel.SelectedCharacter
+		}
+	})
 
-	t := canvas.NewText(tv.data.ErrorMsg, th.Color(theme.ColorNameError, v))
+	t := canvas.NewText("", th.Color(theme.ColorNameError, v))
 	t.TextSize = t.TextSize * 0.8
 	tv.errorLbl = t
+
+	tv.ExtendBaseWidget(tv)
+	return tv
+}
+
+func (tv *TypevalueItem) CreateRenderer() fyne.WidgetRenderer {
+	tv.ExtendBaseWidget(tv)
 
 	tv.layoutcont = container.New(
 		&valuelayout{
@@ -87,35 +86,43 @@ func (tv *TypevalueItem) CreateRenderer() fyne.WidgetRenderer {
 
 func (tv *TypevalueItem) Refresh() {
 	tv.ExtendBaseWidget(tv)
+	if tv.charmodel.SelectedCharacter != nil {
+		tv.data = tv.charmodel.SelectedCharacter.GetElement(tv.ident)
+		tv.data.OnValidated = func(b bool) {
+			fyne.Do(func() {
+				tv.Refresh()
+			})
+		}
 
-	tv.selectwg.Options = tv.getoptions()
-	tv.errorLbl.Text = tv.data.ErrorMsg
-	if tv.data.ErrorMsg == "" {
-		tv.errorLbl.Hide()
-	} else {
-		tv.errorLbl.Show()
+		tv.label.Text = tv.data.Fieldtype.Label
+		tv.selectwg.Options = tv.getoptions()
+		if tv.data.GetValidation() {
+			tv.errorLbl.Hide()
+		} else {
+			tv.errorLbl.Show()
+		}
+		tv.errorLbl.Text = tv.data.ErrorMsg
 	}
-	tv.layoutcont.Refresh()
-}
 
-func (tv *TypevalueItem) MinSize() fyne.Size {
-	return tv.BaseWidget.MinSize()
+	// call Refresh() on layout, so alle CanvasObjects are correctly redrawn
+	tv.layoutcont.Refresh()
 }
 
 func (tv *TypevalueItem) getoptions() []string {
 	switch ass := tv.data.Value.(type) {
 	case *models.Typevalue:
-		exists := false
+		// exists := false
+		index := 0
 		s := make([]string, 0)
-		for _, v := range ass.Validvalues {
-			if tv.selectwg != nil && tv.selectwg.Selected == v.Label {
-				exists = true
+		for i, v := range ass.Validvalues {
+			if tv.selectwg != nil && tv.data.GetValueInfo(models.Value) == v.Label {
+				index = i
 			}
 			s = append(s, v.Label)
 		}
 
-		if !exists && len(s) > 0 {
-			tv.selectwg.Selected = s[0]
+		if len(s) > index+1 {
+			tv.selectwg.Selected = s[index]
 		}
 		return s
 	default:

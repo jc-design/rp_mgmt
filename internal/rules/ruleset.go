@@ -16,7 +16,7 @@ type Ruleset struct {
 	Version string `json:"version"`
 }
 
-func LoadRuleSet(f Folderstructure) (Ruleset, error) {
+func LoadRuleSet(f *Folderstructure) (Ruleset, error) {
 
 	r := Ruleset{}
 
@@ -31,14 +31,4 @@ func LoadRuleSet(f Folderstructure) (Ruleset, error) {
 	}
 
 	return r, nil
-}
-
-func LoadRules(f Folderstructure, rule string) ([]byte, error) {
-
-	data, err := os.ReadFile(filepath.Join(f.Rules, rule))
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }

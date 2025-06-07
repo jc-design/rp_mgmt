@@ -8,16 +8,12 @@ import (
 var _ fyne.Layout = (*characterlistlayout)(nil)
 
 type characterlistlayout struct {
-	btn, list, content fyne.CanvasObject
+	btn, list fyne.CanvasObject
 }
 
 func (cl *characterlistlayout) MinSize(objs []fyne.CanvasObject) fyne.Size {
-	labelwidth := float32(100)
-
-	return fyne.Size{
-		Width:  labelwidth,
-		Height: cl.btn.MinSize().Height * 2,
-	}
+	size := cl.btn.MinSize().Add(cl.list.MinSize())
+	return size
 }
 
 func (cl *characterlistlayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
@@ -40,14 +36,5 @@ func (cl *characterlistlayout) Layout(objs []fyne.CanvasObject, size fyne.Size) 
 	cl.list.Resize(fyne.Size{
 		Width:  colwidth,
 		Height: size.Height - cl.btn.MinSize().Height - innerPad,
-	})
-
-	cl.content.Move(fyne.Position{
-		X: colwidth + innerPad,
-		Y: 0,
-	})
-	cl.content.Resize(fyne.Size{
-		Width:  size.Width - innerPad - colwidth,
-		Height: size.Height,
 	})
 }

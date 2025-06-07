@@ -33,7 +33,7 @@ func (lt *valuelayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	innerPad := theme.Size(theme.SizeNameInnerPadding)
 	stroke := lt.split.(*canvas.Line).StrokeWidth
 
-	labelwidth := float32(100)
+	labelwidth := float32(200) + innerPad
 	row1height := lt.element.MinSize().Height
 
 	totalheight := row1height + 2*innerPad

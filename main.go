@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"log/slog"
 	"os"
+	"path/filepath"
+	"time"
 
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -16,16 +20,41 @@ const (
 
 func main() {
 
-	// os.Setenv("FYNE_SCALE", "1.5")
+	//os.Setenv("FYNE_SCALE", "1.5")
+	// create folderstructer
+	// ~/.config/RoleplayManagement
+	// ~/.config/RoleplayManagement/characters
+	// ~/.config/RoleplayManagement/data
+	// ~/.config/RoleplayManagement/logfiles
+	// ~/.config/RoleplayManagement/rules
+	// ~/.config/RoleplayManagement/settings
+
 	appfolder, err := rules.NewFolderstructure(APPNAME)
 	if err != nil {
-		fmt.Printf("error while initialisation: %s\n", err)
-		os.Exit(1)
+		log.Fatalf("error while initialisation: %s\n", err)
 	}
 
-	ctrl, err := views.NewCharacterController(appfolder, APPNAME)
+	// create logfile ~/.config/RoleplayManagement/logfiles/log_yyyy.MM.dd.json
+	// create a new file for each day
+	l, err := os.OpenFile(filepath.Join(appfolder.Logfiles, "log_"+time.Now().Format("2006.01.02")+".json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		fmt.Printf("error while initialisation: %s\n", err)
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer l.Close()
+
+	// create logger and log func
+	// log func will be passed to different structs
+	logger := slog.New(slog.NewJSONHandler(l, nil))
+	log := func(msg string, err error) {
+		logger.Error(msg, "error", err)
+	}
+
+	// create charactercontroller
+	// check if anny error occurs duruing initialisation
+	// show fyne-window
+	ctrl, err := views.NewCharacterController(&appfolder, log, APPNAME)
+	if err != nil {
+		log("error creating new character controller", err)
 		if ctrl == nil {
 			os.Exit(1)
 		}
@@ -41,8 +70,8 @@ func main() {
 		ctrl.Window.SetContent(l)
 
 	} else {
-		l := container.NewStack(views.NewCharacterlist(ctrl))
-		ctrl.Window.SetContent(l)
+		l := container.NewStack(views.NewW_Arrangement(ctrl.Elechan, ctrl.Model))
+		ctrl.Window.SetContent((l))
 	}
 
 	// ctrl.Model.NewCharacter()

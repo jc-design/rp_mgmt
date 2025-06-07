@@ -17,6 +17,9 @@ type Element struct {
 	ErrorMsg    string         `json:"-"`
 	isValidated bool
 	isDirty     bool
+
+	OnValidated func(bool)          `json:"-"`
+	Log         func(string, error) `json:"-"`
 }
 
 func (e *Element) RulesReset() {
@@ -24,32 +27,89 @@ func (e *Element) RulesReset() {
 }
 
 func (e *Element) RulesApplied(validation bool, err string) {
-	e.isDirty = false
+	e.isDirty = !validation
 	e.isValidated = validation
 	e.ErrorMsg = err
+	if e.OnValidated != nil {
+		// e.OnValidated(validation)
+	}
 }
 
 func (e *Element) Execute() {
 	retval, err := e.Value.Execute()
 	if err != nil {
+		if e.Log != nil {
+			e.Log(fmt.Sprintf("error @Element|Execute - type: %s, id: %s", e.Fieldtype.Type, e.Fieldtype.Id), err)
+		}
 		e.RulesApplied(false, fmt.Sprintf("%v", err))
 		return
 	}
 	if retval != nil {
 		e.SetValue(retval)
 	}
-	e.RulesReset()
 }
 
 func (e *Element) SetValue(input ...any) {
-	e.Value.SetValue(input...)
+	err := e.Value.SetValue(input...)
+	if err != nil && e.Log != nil {
+		e.Log(fmt.Sprintf("error @Element|SetValue - type: %s, id: %s", e.Fieldtype.Type, e.Fieldtype.Id), err)
+	}
 	e.RulesReset()
+}
+
+func (e *Element) GetValueInfo(key string) string {
+	s, err := e.Value.GetInfo(key)
+	if err != nil && e.Log != nil {
+		e.Log(fmt.Sprintf("error @Element|GetValue - type: %s, id: %s, key: %s", e.Fieldtype.Type, e.Fieldtype.Id, key), err)
+	}
+
+	return s
+}
+
+func (e *Element) GetValueAsInt() int {
+	switch ass := e.Value.(type) {
+	case *Intvalue:
+		return ass.Intvalue
+	case *Dice:
+		return ass.Value
+	}
+	return 0
 }
 
 func (e *Element) GetValidation() bool {
 	return e.isValidated
 }
 
+func (e *Element) Clone() *Element {
+
+	newele := &Element{
+		Fieldtype:   e.Fieldtype,
+		Visibility:  e.Visibility,
+		Editable:    e.Editable,
+		ErrorMsg:    e.ErrorMsg,
+		isValidated: e.isValidated,
+		isDirty:     e.isDirty,
+		OnValidated: e.OnValidated,
+		Log:         e.Log,
+	}
+
+	switch ass := e.Value.(type) {
+	case *Dice:
+		newele.Value = CloneAny(ass)
+		return newele
+	case *Intvalue:
+		newele.Value = CloneAny(ass)
+		return newele
+	case *Stringvalue:
+		newele.Value = CloneAny(ass)
+		return newele
+	case *Typevalue:
+		newele.Value = CloneAny(ass)
+		return newele
+	default:
+	}
+	return newele
+}
 func (e *Element) UnmarshalJSON(data []byte) error {
 
 	var jsonData map[string]interface{}

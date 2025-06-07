@@ -8,11 +8,11 @@ import (
 type Activationmode int
 
 const (
-	Never    = 0
 	Creation = Activationmode(1) << iota
 	Levelup
 	Extended
 	Other
+	Never = Activationmode(0)
 )
 
 func (vis *Activationmode) String() string {
@@ -30,7 +30,7 @@ func (vis *Activationmode) String() string {
 		}
 	}
 	if len(v) == 0 {
-		v = append(v, "Never")
+		v = append(v, "never")
 	}
 	return strings.Join(v, "|")
 }

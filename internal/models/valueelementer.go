@@ -7,7 +7,7 @@ type ValueElementer interface {
 }
 
 type ValueSetter interface {
-	SetValue(...any)
+	SetValue(...any) error
 }
 
 type Executor interface {
@@ -15,7 +15,15 @@ type Executor interface {
 }
 
 type Informer interface {
-	GetInfo(key string) string
+	GetInfo(key string) (string, error)
+}
+
+type Cloner[C any] interface {
+	Clone() C
+}
+
+func CloneAny[T Cloner[T]](c T) T {
+	return c.Clone()
 }
 
 const (

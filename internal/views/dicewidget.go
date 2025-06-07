@@ -11,56 +11,31 @@ import (
 	"github.com/jc-design/rp_mgmt/internal/models"
 )
 
-const ()
-
 var _ fyne.Widget = (*DiceItem)(nil)
 
 type DiceItem struct {
 	widget.BaseWidget
 
+	layoutcont *fyne.Container
+
 	splitelem      fyne.CanvasObject
-	layoutcont     *fyne.Container
 	label          *canvas.Text
 	entry          *NumericEntry
 	button         *widget.Button
 	descriptionLbl *canvas.Text
 	errorLbl       *canvas.Text
 
-	controller *CharacterController
-	data       *models.Element
-
-	rolldice  func()
-	savevalue func(string)
+	elechan   chan *models.Character
+	charmodel *CharacterModel
+	ident     string
+	data      *models.Element
 }
 
-func NewDiceItem(ctrl *CharacterController, e *models.Element) *DiceItem {
+func NewDiceItem(chn chan *models.Character, model *CharacterModel, ident string) *DiceItem {
 	di := &DiceItem{}
-	di.controller = ctrl
-	di.data = e
-
-	di.rolldice = func() {
-		di.data.Execute()
-		di.entry.SetText(di.data.Value.GetInfo(models.Value))
-		di.controller.Model.ApplyCreationRules()
-		di.controller.refreshbindings(di.data.Fieldtype.Identify())
-		di.Refresh()
-	}
-
-	di.savevalue = func(s string) {
-		di.data.SetValue(s)
-		di.controller.Model.ApplyCreationRules()
-		di.controller.refreshbindings(di.data.Fieldtype.Identify())
-		di.Refresh()
-	}
-
-	di.ExtendBaseWidget(di)
-
-	ctrl.addbindings(e.Fieldtype.Identify(), di)
-	return di
-}
-
-func (di *DiceItem) CreateRenderer() fyne.WidgetRenderer {
-	di.ExtendBaseWidget(di)
+	di.elechan = chn
+	di.charmodel = model
+	di.ident = ident
 
 	th := di.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
@@ -70,20 +45,41 @@ func (di *DiceItem) CreateRenderer() fyne.WidgetRenderer {
 		StrokeColor: color.NRGBA{R: primecol.R, G: primecol.G, B: primecol.B, A: 31},
 		StrokeWidth: 2,
 	}
-	di.label = canvas.NewText(di.data.Fieldtype.Label, th.Color(theme.ColorNameForeground, v))
+	di.label = canvas.NewText("", th.Color(theme.ColorNameForeground, v))
 
 	di.entry = NewNumericEntry()
-	di.entry.OnChanged = di.savevalue
+	di.entry.OnChanged = func(s string) {
+		if di.data != nil {
+			di.data.SetValue(s)
+			di.elechan <- di.charmodel.SelectedCharacter
+		}
+	}
 
 	di.button = &widget.Button{
-		Icon:     resourceDicedarkSvg,
-		OnTapped: di.rolldice,
+		Icon: resourceDicedarkSvg,
+		OnTapped: func() {
+			if di.data != nil {
+				di.data.Execute()
+				v := di.data.GetValueInfo(models.Value)
+				di.entry.SetText(v)
+				di.Refresh()
+				di.elechan <- di.charmodel.SelectedCharacter
+			}
+		},
 	}
-	di.descriptionLbl = canvas.NewText(di.data.Value.GetInfo(models.Description), th.Color(theme.ColorNameForeground, v))
+	di.descriptionLbl = canvas.NewText("", th.Color(theme.ColorNameForeground, v))
 
-	t := canvas.NewText(di.data.ErrorMsg, th.Color(theme.ColorNameError, v))
+	t := canvas.NewText("", th.Color(theme.ColorNameError, v))
 	t.TextSize = t.TextSize * 0.8
 	di.errorLbl = t
+
+	di.ExtendBaseWidget(di)
+	return di
+}
+
+func (di *DiceItem) CreateRenderer() fyne.WidgetRenderer {
+	di.ExtendBaseWidget(di)
+
 	di.layoutcont = container.New(
 		&dicelayout{
 			split:  di.splitelem,
@@ -107,19 +103,26 @@ func (di *DiceItem) CreateRenderer() fyne.WidgetRenderer {
 
 func (di *DiceItem) Refresh() {
 	di.ExtendBaseWidget(di)
-
-	di.entry.Text = di.data.Value.GetInfo(models.Value)
-	di.descriptionLbl.Text = di.data.Value.GetInfo(models.Description)
-	di.errorLbl.Text = di.data.ErrorMsg
-	if di.data.ErrorMsg == "" {
-		di.errorLbl.Hide()
-	} else {
-		di.errorLbl.Show()
+	if di.charmodel.SelectedCharacter != nil {
+		di.data = di.charmodel.SelectedCharacter.GetElement(di.ident)
+		// maybe this isn't even necessary
+		// check if refresh() in charactercontroller.go|NewCharactewrController - go func() is sufficant!
+		di.data.OnValidated = func(b bool) {
+			fyne.Do(func() {
+				di.Refresh()
+			})
+		}
+		di.label.Text = di.data.Fieldtype.Label
+		di.entry.Text = di.data.GetValueInfo(models.Value)
+		di.descriptionLbl.Text = di.data.GetValueInfo(models.Description)
+		if di.data.GetValidation() {
+			di.errorLbl.Hide()
+		} else {
+			di.errorLbl.Show()
+		}
+		di.errorLbl.Text = di.data.ErrorMsg
 	}
-	di.layoutcont.Refresh()
-	// canvas.Refresh(di)
-}
 
-func (di *DiceItem) MinSize() fyne.Size {
-	return di.BaseWidget.MinSize()
+	// call Refresh() on layout, so alle CanvasObjects are correctly redrawn
+	di.layoutcont.Refresh()
 }

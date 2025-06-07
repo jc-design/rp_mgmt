@@ -35,7 +35,7 @@ func (dl *dicelayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	stroke := dl.split.(*canvas.Line).StrokeWidth
 
 	dicevaluewidth := float32(100)
-	labelwidth := float32(100)
+	labelwidth := float32(200) + innerPad
 	row1height := dl.entry.MinSize().Height
 
 	totalheight := row1height + 2*innerPad

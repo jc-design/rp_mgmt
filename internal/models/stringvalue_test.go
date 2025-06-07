@@ -31,5 +31,8 @@ func TestStringvalueJsonMarshal(t *testing.T) {
 	if err != nil {
 		assert.Fail(t, "failing unmarshaling element")
 	}
-	assert.Equal(t, val.GetInfo("value"), compare_val.GetInfo("value"))
+
+	s1, _ := val.GetInfo(models.Identify)
+	s2, _ := compare_val.GetInfo(models.Identify)
+	assert.Equal(t, s1, s2)
 }
