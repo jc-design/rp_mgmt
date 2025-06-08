@@ -6,6 +6,7 @@ __debug_*
 # Ignore vscodes directory
 .vscode/
 build/
+env/
 
 # Ignore all .env files
 env
