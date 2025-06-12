@@ -94,7 +94,7 @@ func (c *Character) GetValueAsInt(ident string) int {
 	return e.GetValueAsInt()
 }
 
-func (c *Character) IsValueInRange(ident string, min, max int64) bool {
+func (c *Character) IsValueInRange(ident string, min, max float64) bool {
 	e := c.GetElement(ident)
 	if e == nil {
 		return false
@@ -170,7 +170,7 @@ func (c *Character) SetValueFromList(ident, fieldtype, list string) {
 	}
 }
 
-func (c *Character) SetDiceProperties(ident string, dicevalue, dicecount int64, dicemarkup float64) {
+func (c *Character) SetDiceProperties(ident string, dicevalue, dicecount, dicemarkup float64) {
 	e := c.GetElement(ident)
 	if e == nil {
 		return

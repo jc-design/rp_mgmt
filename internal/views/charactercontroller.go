@@ -90,7 +90,7 @@ func NewCharacterController(f *rules.Folderstructure, log func(string, error), w
 	var err error
 	ctrl.Model, err = NewCharacterModel(f, log)
 	if err != nil {
-		return &ctrl, err
+		return &ctrl, fmt.Errorf("error while creating new charactermodel: %w\n", err)
 	}
 
 	return &ctrl, nil
@@ -184,12 +184,12 @@ func (cm *CharacterModel) LoadTypes() error {
 
 	data, err := os.ReadFile(filepath.Join(cm.folderstr.Data, "types.json"))
 	if err != nil {
-		return fmt.Errorf("error loading types:  %w", err)
+		return fmt.Errorf("error loading types:  %w\n", err)
 	}
 
 	err = json.Unmarshal(data, &cm.allTypes)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling types:  %w", err)
+		return fmt.Errorf("error unmarshaling types:  %w\n", err)
 	}
 
 	return nil
@@ -198,12 +198,12 @@ func (cm *CharacterModel) LoadTypes() error {
 func (cm *CharacterModel) LoadElements() error {
 	data, err := os.ReadFile(filepath.Join(cm.folderstr.Data, "characterproperties.json"))
 	if err != nil {
-		return fmt.Errorf("error loading elements:  %w", err)
+		return fmt.Errorf("error loading elements:  %w\n", err)
 	}
 
 	err = json.Unmarshal(data, &cm.allElements)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling elements:  %w", err)
+		return fmt.Errorf("error unmarshaling elements:  %w\n", err)
 	}
 
 	// pass log func to Element, so errors could be logged where they occur
@@ -218,12 +218,12 @@ func (cm *CharacterModel) LoadCharacters() error {
 
 	data, err := os.ReadFile(filepath.Join(cm.folderstr.Characters, "characters.json"))
 	if err != nil {
-		return fmt.Errorf("error loading characters:  %w", err)
+		return fmt.Errorf("error loading characters:  %w\n", err)
 	}
 
 	err = json.Unmarshal(data, &cm.Characters)
 	if err != nil {
-		return fmt.Errorf("error unmarshaling characters:  %w", err)
+		return fmt.Errorf("error unmarshaling characters:  %w\n", err)
 	}
 
 	// check if character ruleset is equal to defined ruleset
@@ -248,12 +248,12 @@ func (cm *CharacterModel) SaveCharacters() error {
 
 	bytes, err := json.MarshalIndent(cm.Characters, "", " ")
 	if err != nil {
-		return fmt.Errorf("error marshaling charatcers:  %w", err)
+		return fmt.Errorf("error marshaling charatcers:  %w\n", err)
 
 	}
 
 	if err := os.WriteFile(filepath.Join(cm.folderstr.Characters, "characters.json"), bytes, 0644); err != nil {
-		return fmt.Errorf("error saving characters:  %w", err)
+		return fmt.Errorf("error saving characters:  %w\n", err)
 	}
 
 	return nil
@@ -311,10 +311,6 @@ func (cm *CharacterModel) newRuleservice(rulefn, name, version string) (rules.Ru
 		data = append(data, file_data...)
 	}
 
-	// data, err := os.ReadFile(filepath.Join(cm.folderstr.Rules, rulefn))
-	// if err != nil {
-	// 	return nil, err
-	// }
 	client, err := rules.NewInputOnlyRuleService(data, name, version)
 	if err != nil {
 		return nil, err

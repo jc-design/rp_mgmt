@@ -96,16 +96,14 @@ func (e *Element) Clone() *Element {
 	switch ass := e.Value.(type) {
 	case *Dice:
 		newele.Value = CloneAny(ass)
-		return newele
 	case *Intvalue:
 		newele.Value = CloneAny(ass)
-		return newele
 	case *Stringvalue:
 		newele.Value = CloneAny(ass)
-		return newele
 	case *Typevalue:
 		newele.Value = CloneAny(ass)
-		return newele
+	case *Skill:
+		newele.Value = CloneAny(ass)
 	default:
 	}
 	return newele
@@ -142,6 +140,12 @@ func (e *Element) UnmarshalJSON(data []byte) error {
 		}
 	} else if val["stringvalue"] != nil {
 		var i Stringvalue
+		err := mapstructure.Decode(val, &i)
+		if err == nil {
+			e.Value = &i
+		}
+	} else if val["skilltype"] != nil {
+		var i Skill
 		err := mapstructure.Decode(val, &i)
 		if err == nil {
 			e.Value = &i
