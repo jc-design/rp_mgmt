@@ -10,12 +10,12 @@ var _ ValueElementer = (*Skill)(nil)
 var _ Cloner[*Skill] = (*Skill)(nil)
 
 type Skill struct {
-	Skilltype       Skilltype `json:"skilltype"`
-	DiceValue       int       `json:"dicevalue"`
-	DiceCount       int       `json:"dicecount"`
-	DiceMarkup      int       `json:"dicemarkup"`
-	DiceBonusMarkup int       `json:"dicebonusmarkup"`
-	Abr             string    `json:"abr"`
+	Skilltype       string `json:"skilltype"`
+	DiceValue       int    `json:"dicevalue"`
+	DiceCount       int    `json:"dicecount"`
+	DiceMarkup      int    `json:"dicemarkup"`
+	DiceBonusMarkup int    `json:"dicebonusmarkup"`
+	Abr             string `json:"abr"`
 }
 
 // ValueSetter interface

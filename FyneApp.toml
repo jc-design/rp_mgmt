@@ -5,7 +5,7 @@ Website = "https://github.com/jc-design/rp_mgmt"
   Name = "rp_mgmt"
   ID = "de.jc-design.rp_mgmt"
   Version = "1.0.0"
-  Build = 4
+  Build = 5
 
 [LinuxAndBSD]
   GenericName = "rp_mgmt"

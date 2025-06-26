@@ -157,7 +157,7 @@ func (e *Element) UnmarshalJSON(data []byte) error {
 			e.Value = &i
 		}
 	} else if val["type"] != nil {
-		var i = Typevalue{}
+		var i Typevalue
 		err := mapstructure.Decode(val, &i.Fieldvalue)
 		if err == nil {
 			e.Value = &i

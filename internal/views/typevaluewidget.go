@@ -120,13 +120,14 @@ func (tv *TypevalueItem) getoptions() []string {
 			}
 			s = append(s, v.Label)
 		}
-
-		if len(s) > index+1 {
+		if len(s) > 0 {
 			tv.selectwg.Selected = s[index]
+		} else {
+			tv.selectwg.Selected = ""
 		}
 		return s
 	default:
-		tv.selectwg.Selected = "Keine Angabe"
-		return []string{"Keine Angabe"}
+		tv.selectwg.Selected = ""
+		return []string{}
 	}
 }

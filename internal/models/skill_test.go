@@ -11,7 +11,7 @@ import (
 func TestSkillJsonMarshal(t *testing.T) {
 	skill := models.Skill{
 
-		Skilltype:       models.Skilltype(models.Innate),
+		Skilltype:       "innate",
 		DiceValue:       20,
 		DiceCount:       1,
 		DiceMarkup:      -2,

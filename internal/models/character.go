@@ -154,19 +154,26 @@ func (c *Character) SetValueFromList(ident, fieldtype, list string) {
 				return
 			}
 		}
-		e.SetValue(types[0].Label)
+		if len(types) > 0 {
+			e.SetValue(types[0].Label)
+		} else {
+			e.SetValue("")
+		}
 	case *Typevalue:
 		ass.Validvalues = types
 
 		for _, field := range types {
-
 			i := e.GetValueInfo(Id)
 			if field.Id == i {
 				return
 			}
 		}
+		if len(types) > 0 {
+			e.SetValue(types[0])
+		} else {
+			e.SetValue(nil)
+		}
 
-		e.SetValue(types[0])
 	}
 }
 
@@ -180,6 +187,15 @@ func (c *Character) SetDiceProperties(ident string, dicevalue, dicecount, dicema
 	e.SetValue(arr)
 }
 
+func (c *Character) SetSkillProperties(ident string, dicevalue, dicecount, dicemarkup, dicebonusmarkup float64) {
+	e := c.GetElement(ident)
+	if e == nil {
+		return
+	}
+
+	arr := []int{int(dicevalue), int(dicecount), int(dicemarkup), int(dicebonusmarkup)}
+	e.SetValue(arr)
+}
 func (c *Character) IsAllValid() bool {
 	for _, e := range c.Properties {
 		if !e.isValidated {

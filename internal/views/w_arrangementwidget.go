@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -188,8 +189,10 @@ func (w *W_Arrangement) getApptab() fyne.CanvasObject {
 	for _, group := range w.charmodel.SelectedCharacter.PropsGrouped {
 		vbox := container.NewVBox()
 		for _, e := range group.Elements {
+			fmt.Println(e.Fieldtype.Label)
 			var c fyne.CanvasObject
 			if w.charmodel.SelectedCharacter.Status&e.Editable == 1 {
+				fmt.Println(e.Fieldtype.Label)
 				switch e.Value.(type) {
 				case *models.Intvalue:
 					c = NewIntvalueItem(w.elechan, w.charmodel, e.Fieldtype.Identify())
@@ -205,6 +208,11 @@ func (w *W_Arrangement) getApptab() fyne.CanvasObject {
 					break
 				case *models.Dice:
 					c = NewDiceItem(w.elechan, w.charmodel, e.Fieldtype.Identify())
+					vbox.Add(c)
+					break
+				case *models.Skill:
+					fmt.Println("Test")
+					c = NewSkillItem(w.elechan, w.charmodel, e.Fieldtype.Identify())
 					vbox.Add(c)
 					break
 				default:
